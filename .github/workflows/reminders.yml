@@ -2,8 +2,10 @@ name: Email reminders
 
 on:
   schedule:
-    # Every 5 minutes (GitHub's minimum). Also keeps the Supabase project awake.
-    - cron: '*/5 * * * *'
+    # Every 5 minutes, offset by 1 (fires at :01, :06, :11 … :31 …). The offset
+    # catches on-the-hour and half-hour reminders ~1 min after they're due and
+    # dodges the top-of-hour congestion. Also keeps the Supabase project awake.
+    - cron: '1-59/5 * * * *'
   workflow_dispatch: {} # allow manual runs (for testing)
 
 jobs:
