@@ -9,6 +9,7 @@ import { AgendaView } from './components/AgendaView'
 import { EventModal } from './components/EventModal'
 import { PriorityManager } from './components/PriorityManager'
 import type { TierDraft } from './components/PriorityManager'
+import { ReminderToaster } from './components/ReminderToaster'
 import { Auth } from './components/Auth'
 import { useAuth } from './auth/AuthProvider'
 import { supabase } from './lib/supabase'
@@ -19,10 +20,12 @@ import {
   deletePriorityTier,
   fetchEvents,
   fetchPriorityTiers,
+  fetchReminders,
+  setEventReminders,
   updateEvent,
   updatePriorityTier,
 } from './lib/api'
-import type { EventInputData, EventRow } from './lib/api'
+import type { EventInputData, EventRow, ReminderDraft } from './lib/api'
 import { isWindow } from './lib/events'
 import { PRIORITY_TIERS } from './data'
 import { useTheme } from './useTheme'
@@ -97,6 +100,12 @@ function App() {
     enabled: !!session,
   })
 
+  const { data: reminders } = useQuery({
+    queryKey: ['reminders'],
+    queryFn: fetchReminders,
+    enabled: !!session,
+  })
+
   const legendTiers = tiers && tiers.length ? tiers : PRIORITY_TIERS
 
   const colorOf = useMemo(() => {
@@ -131,10 +140,23 @@ function App() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['events'] })
 
   const saveMut = useMutation({
-    mutationFn: ({ input, id }: { input: EventInputData; id?: string }) =>
-      id ? updateEvent(id, input) : createEvent(input),
+    mutationFn: async ({
+      input,
+      reminders: rem,
+      id,
+    }: {
+      input: EventInputData
+      reminders: ReminderDraft[]
+      id?: string
+    }) => {
+      let eventId = id
+      if (id) await updateEvent(id, input)
+      else eventId = (await createEvent(input)).id
+      if (eventId) await setEventReminders(eventId, rem)
+    },
     onSuccess: () => {
       invalidate()
+      queryClient.invalidateQueries({ queryKey: ['reminders'] })
       setModal({ open: false })
     },
   })
@@ -143,6 +165,7 @@ function App() {
     mutationFn: (id: string) => deleteEvent(id),
     onSuccess: () => {
       invalidate()
+      queryClient.invalidateQueries({ queryKey: ['reminders'] })
       setModal({ open: false })
     },
   })
@@ -332,12 +355,31 @@ function App() {
           event={modal.event}
           initialDate={modal.initialDate}
           initialTime={modal.initialTime}
+          initialReminders={
+            modal.event
+              ? (reminders ?? [])
+                  .filter((r) => r.event_id === modal.event!.id)
+                  .map(({ kind, minutes_before, days_before, at_time, channel }) => ({
+                    kind,
+                    minutes_before,
+                    days_before,
+                    at_time,
+                    channel,
+                  }))
+              : []
+          }
           busy={saveMut.isPending || deleteMut.isPending}
-          onSave={(input, id) => saveMut.mutate({ input, id })}
+          onSave={(input, rem, id) => saveMut.mutate({ input, reminders: rem, id })}
           onDelete={(id) => deleteMut.mutate(id)}
           onClose={() => setModal({ open: false })}
         />
       )}
+
+      <ReminderToaster
+        events={events ?? []}
+        reminders={reminders ?? []}
+        onOpen={(id) => openEdit(id)}
+      />
 
       {showPriorities && (
         <PriorityManager

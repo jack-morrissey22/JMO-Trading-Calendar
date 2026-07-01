@@ -1,9 +1,16 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import type { EventInputData, EventRow } from '../lib/api'
+import type { EventInputData, EventRow, ReminderDraft } from '../lib/api'
 import type { EventCategory, PriorityTier } from '../types'
+import { PRESETS, labelReminder, relative } from '../lib/reminders'
 
 const CATEGORIES: EventCategory[] = ['Macro/Economic', 'Expiry', 'Custom']
+
+const CUSTOM_UNITS: { label: string; mult: number }[] = [
+  { label: 'minutes', mult: 1 },
+  { label: 'hours', mult: 60 },
+  { label: 'days', mult: 1440 },
+]
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
@@ -21,8 +28,9 @@ export type EventModalProps = {
   event?: EventRow
   initialDate?: string
   initialTime?: string
+  initialReminders?: ReminderDraft[]
   busy?: boolean
-  onSave: (input: EventInputData, id?: string) => void
+  onSave: (input: EventInputData, reminders: ReminderDraft[], id?: string) => void
   onDelete: (id: string) => void
   onClose: () => void
 }
@@ -32,6 +40,7 @@ export function EventModal({
   event,
   initialDate,
   initialTime,
+  initialReminders,
   busy,
   onSave,
   onDelete,
@@ -51,6 +60,18 @@ export function EventModal({
   const [category, setCategory] = useState<string>(event?.category ?? 'Macro/Economic')
   const [tags, setTags] = useState((event?.tags ?? []).join(', '))
   const [notes, setNotes] = useState(event?.notes ?? '')
+
+  const [reminders, setReminders] = useState<ReminderDraft[]>(initialReminders ?? [])
+  const [customVal, setCustomVal] = useState('30')
+  const [customUnit, setCustomUnit] = useState(0)
+
+  const addReminder = (r: ReminderDraft) => setReminders((rs) => [...rs, r])
+  const removeReminder = (i: number) => setReminders((rs) => rs.filter((_, j) => j !== i))
+  const addCustom = () => {
+    const n = parseInt(customVal, 10)
+    if (!Number.isFinite(n) || n < 0) return
+    addReminder(relative(n * CUSTOM_UNITS[customUnit].mult))
+  }
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -77,7 +98,7 @@ export function EventModal({
         .filter(Boolean),
       notes: notes.trim() || null,
     }
-    onSave(input, event?.id)
+    onSave(input, reminders, event?.id)
   }
 
   return (
@@ -161,6 +182,64 @@ export function EventModal({
           Notes
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
         </label>
+
+        <div className="field reminders-field">
+          Reminders
+          {reminders.length > 0 && (
+            <div className="reminder-chips">
+              {reminders.map((r, i) => (
+                <span className="reminder-chip" key={i}>
+                  {labelReminder(r)}
+                  <button
+                    type="button"
+                    className="reminder-chip-x"
+                    onClick={() => removeReminder(i)}
+                    aria-label="Remove reminder"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="reminder-add">
+            <select
+              value=""
+              onChange={(e) => {
+                const p = PRESETS[Number(e.target.value)]
+                if (p) addReminder(p.make())
+              }}
+            >
+              <option value="">+ Add reminder…</option>
+              {PRESETS.map((p, i) => (
+                <option key={i} value={i}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="reminder-custom">
+            <span>Custom:</span>
+            <input
+              type="number"
+              min={0}
+              value={customVal}
+              onChange={(e) => setCustomVal(e.target.value)}
+            />
+            <select value={customUnit} onChange={(e) => setCustomUnit(Number(e.target.value))}>
+              {CUSTOM_UNITS.map((u, i) => (
+                <option key={i} value={i}>
+                  {u.label}
+                </option>
+              ))}
+            </select>
+            <span>before</span>
+            <button type="button" className="btn-ghost reminder-custom-add" onClick={addCustom}>
+              Add
+            </button>
+          </div>
+          <p className="modal-hint">In-app pop-ups while the calendar is open. (Email in a later step.)</p>
+        </div>
 
         <div className="modal-actions">
           {editing && (

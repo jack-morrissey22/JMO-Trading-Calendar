@@ -105,3 +105,45 @@ export async function deleteEvent(id: string): Promise<void> {
   const { error } = await supabase.from('events').delete().eq('id', id)
   if (error) throw error
 }
+
+// ---------------------------------------------------------------------------
+// Reminders
+// ---------------------------------------------------------------------------
+
+export type ReminderDraft = {
+  kind: 'relative' | 'fixed'
+  minutes_before: number | null
+  days_before: number | null
+  at_time: string | null
+  channel: string
+}
+
+export type ReminderRow = ReminderDraft & { id: string; event_id: string }
+
+export async function fetchReminders(): Promise<ReminderRow[]> {
+  const { data, error } = await supabase
+    .from('reminders')
+    .select('id, event_id, kind, minutes_before, days_before, at_time, channel')
+  if (error) throw error
+  return (data ?? []) as ReminderRow[]
+}
+
+/** Replace all reminders for an event with the given set (delete + insert). */
+export async function setEventReminders(eventId: string, drafts: ReminderDraft[]): Promise<void> {
+  const { data: userRes } = await supabase.auth.getUser()
+  const user_id = userRes.user?.id
+  const del = await supabase.from('reminders').delete().eq('event_id', eventId)
+  if (del.error) throw del.error
+  if (drafts.length === 0) return
+  const rows = drafts.map((d) => ({
+    event_id: eventId,
+    user_id,
+    kind: d.kind,
+    minutes_before: d.minutes_before,
+    days_before: d.days_before,
+    at_time: d.at_time,
+    channel: d.channel,
+  }))
+  const ins = await supabase.from('reminders').insert(rows)
+  if (ins.error) throw ins.error
+}
