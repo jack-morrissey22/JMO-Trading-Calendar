@@ -845,6 +845,23 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+.recur-extend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+.recur-extend input {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: inherit;
+}
 
 /* ---- In-app reminder toasts ---- */
 .toast-stack {

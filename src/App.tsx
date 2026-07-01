@@ -378,6 +378,28 @@ function App() {
     onSuccess: invalidateAll,
   })
 
+  // Extend on demand: materialise a series further than its rolling horizon,
+  // up to a chosen date. Purely additive (never removes existing occurrences).
+  const extendSeriesMut = useMutation({
+    mutationFn: async ({ seriesId, toDate }: { seriesId: string; toDate: string }) => {
+      const s = (series ?? []).find((x) => x.id === seriesId)
+      if (!s) return
+      const own = (events ?? []).filter((e) => e.series_id === seriesId)
+      const existing = new Set(own.map((e) => fmtDate(new Date(e.starts_at))))
+      const earliest = own.reduce<string | null>(
+        (min, e) => (min === null || e.starts_at < min ? e.starts_at : min),
+        null,
+      )
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const seed = earliest ? new Date(earliest) : today
+      seed.setHours(0, 0, 0, 0)
+      const from = seed > today ? seed : today
+      await projectSeries(s, existing, from, new Date(`${toDate}T00:00:00`))
+    },
+    onSuccess: invalidateAll,
+  })
+
   const saveTiersMut = useMutation({
     mutationFn: async ({
       tiers: finalTiers,
@@ -627,7 +649,8 @@ function App() {
             deleteMut.isPending ||
             skipMut.isPending ||
             updateSeriesMut.isPending ||
-            deleteSeriesMut.isPending
+            deleteSeriesMut.isPending ||
+            extendSeriesMut.isPending
           }
           onSave={(input, rem, sound, recurrence, id) =>
             saveMut.mutate({ input, reminders: rem, sound, recurrence, id })
@@ -637,6 +660,7 @@ function App() {
           }
           onSkip={(id) => skipMut.mutate(id)}
           onUpdateSeries={(seriesId, rec) => updateSeriesMut.mutate({ seriesId, rec })}
+          onExtendSeries={(seriesId, toDate) => extendSeriesMut.mutate({ seriesId, toDate })}
           onDeleteSeries={(seriesId) => deleteSeriesMut.mutate(seriesId)}
           onDelete={(id) => deleteMut.mutate(id)}
           onClose={() => setModal({ open: false })}

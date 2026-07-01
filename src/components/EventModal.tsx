@@ -72,6 +72,7 @@ export type EventModalProps = {
   ) => void
   onSkip?: (id: string) => void
   onUpdateSeries?: (seriesId: string, recurrence: RecurrenceValue) => void
+  onExtendSeries?: (seriesId: string, toDate: string) => void
   onDeleteSeries?: (seriesId: string) => void
   onDelete: (id: string) => void
   onClose: () => void
@@ -90,6 +91,7 @@ export function EventModal({
   onConfirm,
   onSkip,
   onUpdateSeries,
+  onExtendSeries,
   onDeleteSeries,
   onDelete,
   onClose,
@@ -98,6 +100,7 @@ export function EventModal({
   const existingParts = event ? toLocalParts(event.starts_at) : null
   const [showSuggest, setShowSuggest] = useState(false)
   const [recurrence, setRecurrence] = useState<RecurrenceValue | null>(null)
+  const [extendDate, setExtendDate] = useState(() => `${new Date().getFullYear()}-12-31`)
 
   const [title, setTitle] = useState(event?.title ?? '')
   const [allDay, setAllDay] = useState(event?.all_day ?? false)
@@ -483,6 +486,22 @@ export function EventModal({
                 onClick={() => onDeleteSeries?.(series.id)}
               >
                 Stop repeating
+              </button>
+            </div>
+            <div className="recur-extend">
+              <span>Or project further — out to</span>
+              <input
+                type="date"
+                value={extendDate}
+                onChange={(e) => setExtendDate(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn-ghost"
+                disabled={busy}
+                onClick={() => onExtendSeries?.(series.id, extendDate)}
+              >
+                Extend
               </button>
             </div>
           </div>
