@@ -29,6 +29,7 @@ import {
 } from './lib/api'
 import type { EventInputData, EventRow, ReminderDraft } from './lib/api'
 import { isWindow } from './lib/events'
+import { buildCsv, buildJson, downloadFile } from './lib/export'
 import { PRIORITY_TIERS } from './data'
 import { useTheme } from './useTheme'
 import './App.css'
@@ -89,6 +90,7 @@ function App() {
   const [fcTitle, setFcTitle] = useState('')
   const [modal, setModal] = useState<ModalState>({ open: false })
   const [showPriorities, setShowPriorities] = useState(false)
+  const [showExport, setShowExport] = useState(false)
 
   const { data: tiers } = useQuery({
     queryKey: ['priority_tiers'],
@@ -268,6 +270,23 @@ function App() {
   const openCreateAt = (date: Date, hour: number) =>
     setModal({ open: true, initialDate: fmtDate(date), initialTime: `${pad(hour)}:00` })
 
+  const tierNameOf = (id: string | null) => (tiers ?? []).find((t) => t.id === id)?.name ?? ''
+  const exportAs = (kind: 'csv' | 'json') => {
+    const evs = events ?? []
+    const rems = reminders ?? []
+    const stamp = fmtDate(new Date())
+    if (kind === 'csv') {
+      downloadFile(`jmo-calendar-${stamp}.csv`, buildCsv(evs, rems, tierNameOf), 'text/csv;charset=utf-8')
+    } else {
+      downloadFile(
+        `jmo-calendar-${stamp}.json`,
+        buildJson(evs, rems, tierNameOf, new Date().toISOString()),
+        'application/json',
+      )
+    }
+    setShowExport(false)
+  }
+
   const title =
     view === 'day'
       ? dayTitle(focusDate)
@@ -305,6 +324,25 @@ function App() {
           >
             ⚙ Priorities
           </button>
+          <div className="export-wrap">
+            <button
+              className="header-btn"
+              onClick={() => setShowExport((s) => !s)}
+              onBlur={() => setTimeout(() => setShowExport(false), 150)}
+            >
+              ⬇ Export
+            </button>
+            {showExport && (
+              <div className="export-menu">
+                <button className="export-item" onMouseDown={(e) => e.preventDefault()} onClick={() => exportAs('csv')}>
+                  CSV (spreadsheet)
+                </button>
+                <button className="export-item" onMouseDown={(e) => e.preventDefault()} onClick={() => exportAs('json')}>
+                  JSON (full backup)
+                </button>
+              </div>
+            )}
+          </div>
           <button className="theme-toggle" onClick={toggle} aria-label="Toggle light/dark theme">
             {theme === 'dark' ? '☀ Light' : '☾ Dark'}
           </button>
