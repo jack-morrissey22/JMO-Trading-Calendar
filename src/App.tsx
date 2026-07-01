@@ -5,6 +5,7 @@ import type FullCalendar from '@fullcalendar/react'
 import { TradingCalendar } from './components/TradingCalendar'
 import { DayView } from './components/DayView'
 import { WeekView } from './components/WeekView'
+import { AgendaView } from './components/AgendaView'
 import { EventModal } from './components/EventModal'
 import { Auth } from './components/Auth'
 import { useAuth } from './auth/AuthProvider'
@@ -22,12 +23,11 @@ import { useTheme } from './useTheme'
 import './App.css'
 
 type ViewKey = 'month' | 'week' | 'day' | 'agenda'
-type FcViewKey = 'month' | 'agenda'
+type FcViewKey = 'month'
 const FC_VIEW: Record<FcViewKey, string> = {
   month: 'dayGridMonth',
-  agenda: 'listMonth',
 }
-const isFc = (v: ViewKey): v is FcViewKey => v === 'month' || v === 'agenda'
+const isFc = (v: ViewKey): v is FcViewKey => v === 'month'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const fmtDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
@@ -36,6 +36,12 @@ const addDays = (d: Date, n: number) => {
   r.setDate(r.getDate() + n)
   return r
 }
+const addMonths = (d: Date, n: number) => {
+  const r = new Date(d)
+  r.setMonth(r.getMonth() + n)
+  return r
+}
+const monthTitle = (d: Date) => d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 const startOfWeek = (d: Date) => {
   const r = new Date(d)
   r.setHours(0, 0, 0, 0)
@@ -136,11 +142,12 @@ function App() {
   const shift = (dir: -1 | 1) => {
     if (view === 'day') setFocusDate((d) => addDays(d, dir))
     else if (view === 'week') setFocusDate((d) => addDays(d, dir * 7))
+    else if (view === 'agenda') setFocusDate((d) => addMonths(d, dir))
     else calRef.current?.getApi()[dir === -1 ? 'prev' : 'next']()
   }
   const goToday = () => {
-    if (view === 'day' || view === 'week') setFocusDate(new Date())
-    else calRef.current?.getApi().today()
+    if (view === 'month') calRef.current?.getApi().today()
+    else setFocusDate(new Date())
   }
 
   const onDatesSet = (arg: DatesSetArg) => {
@@ -159,7 +166,14 @@ function App() {
   const openCreateAt = (date: Date, hour: number) =>
     setModal({ open: true, initialDate: fmtDate(date), initialTime: `${pad(hour)}:00` })
 
-  const title = view === 'day' ? dayTitle(focusDate) : view === 'week' ? weekTitle(focusDate) : fcTitle
+  const title =
+    view === 'day'
+      ? dayTitle(focusDate)
+      : view === 'week'
+        ? weekTitle(focusDate)
+        : view === 'agenda'
+          ? monthTitle(focusDate)
+          : fcTitle
 
   return (
     <div className="app">
@@ -239,10 +253,17 @@ function App() {
                 setView('day')
               }}
             />
+          ) : view === 'agenda' ? (
+            <AgendaView
+              monthDate={focusDate}
+              events={events ?? []}
+              colorOf={colorOf}
+              onEventClick={openEdit}
+            />
           ) : (
             <TradingCalendar
               ref={calRef}
-              initialView={FC_VIEW[view]}
+              initialView={FC_VIEW.month}
               initialDate={focusDate}
               events={fcEvents}
               onDateClick={(dateStr) => setModal({ open: true, initialDate: dateStr })}
