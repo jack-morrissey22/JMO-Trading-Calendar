@@ -773,6 +773,67 @@
   margin: 2px 0 0;
 }
 
+/* ---- Suggestions inbox ---- */
+.tentative-hint {
+  color: var(--accent);
+}
+.modal.inbox {
+  max-width: 520px;
+}
+.inbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 52vh;
+  overflow-y: auto;
+  margin: 6px 0;
+}
+.inbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  border-top: 1px solid var(--border);
+}
+.inbox-row:first-child {
+  border-top: none;
+}
+.inbox-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.inbox-main {
+  flex: 1;
+  min-width: 0;
+}
+.inbox-title {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inbox-when {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.inbox-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.inbox-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.inbox-empty {
+  padding: 20px 6px;
+  color: var(--text-dim);
+}
+
 /* ---- In-app reminder toasts ---- */
 .toast-stack {
   position: fixed;

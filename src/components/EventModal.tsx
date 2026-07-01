@@ -62,6 +62,13 @@ export type EventModalProps = {
     recurrence: RecurrenceValue | null,
     id?: string,
   ) => void
+  onConfirm?: (
+    input: EventInputData,
+    reminders: ReminderDraft[],
+    sound: SoundChange,
+    id: string,
+  ) => void
+  onSkip?: (id: string) => void
   onDelete: (id: string) => void
   onClose: () => void
 }
@@ -75,6 +82,8 @@ export function EventModal({
   initialReminders,
   busy,
   onSave,
+  onConfirm,
+  onSkip,
   onDelete,
   onClose,
 }: EventModalProps) {
@@ -187,18 +196,14 @@ export function EventModal({
     addReminder(relative(n * CUSTOM_UNITS[customUnit].mult))
   }
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault()
-    if (!date || !title) return
-
+  function buildPayload(): { input: EventInputData; sound: SoundChange } | null {
+    if (!date || !title) return null
     const starts_at = allDay
       ? new Date(`${date}T00:00:00`).toISOString()
       : new Date(`${date}T${time}:00`).toISOString()
-
     // A window is an all-day event with an end date after the start date.
     const ends_at =
       allDay && endDate && endDate > date ? new Date(`${endDate}T00:00:00`).toISOString() : null
-
     const input: EventInputData = {
       title: title.trim(),
       starts_at,
@@ -214,8 +219,23 @@ export function EventModal({
       speak,
     }
     const sound: SoundChange = soundChanged ? { data: soundData, name: soundName } : undefined
-    onSave(input, reminders, sound, editing ? null : recurrence, event?.id)
+    return { input, sound }
   }
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault()
+    const p = buildPayload()
+    if (!p) return
+    onSave(p.input, reminders, p.sound, editing ? null : recurrence, event?.id)
+  }
+
+  function doConfirm() {
+    const p = buildPayload()
+    if (!p || !event) return
+    onConfirm?.(p.input, reminders, p.sound, event.id)
+  }
+
+  const tentative = editing && event?.status === 'tentative'
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -432,8 +452,23 @@ export function EventModal({
 
         {!editing && <RecurrenceEditor seedDate={date} onChange={setRecurrence} />}
 
+        {tentative && (
+          <p className="modal-hint tentative-hint">
+            ↪ Projected (unconfirmed). Adjust the date if it's off, then Confirm — or Skip it.
+          </p>
+        )}
+
         <div className="modal-actions">
-          {editing && (
+          {tentative ? (
+            <button
+              type="button"
+              className="btn-danger"
+              disabled={busy}
+              onClick={() => event && onSkip?.(event.id)}
+            >
+              Skip
+            </button>
+          ) : editing ? (
             <button
               type="button"
               className="btn-danger"
@@ -442,14 +477,25 @@ export function EventModal({
             >
               Delete
             </button>
-          )}
+          ) : null}
           <div className="modal-actions-right">
             <button type="button" className="btn-ghost" onClick={onClose} disabled={busy}>
               Cancel
             </button>
-            <button type="submit" className="btn-primary" disabled={busy}>
-              {busy ? 'Saving…' : 'Save'}
-            </button>
+            {tentative ? (
+              <>
+                <button type="submit" className="btn-ghost" disabled={busy}>
+                  Save edits
+                </button>
+                <button type="button" className="btn-primary" disabled={busy} onClick={doConfirm}>
+                  {busy ? '…' : '✓ Confirm'}
+                </button>
+              </>
+            ) : (
+              <button type="submit" className="btn-primary" disabled={busy}>
+                {busy ? 'Saving…' : 'Save'}
+              </button>
+            )}
           </div>
         </div>
       </form>

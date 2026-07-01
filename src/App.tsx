@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { DatesSetArg, EventInput } from '@fullcalendar/core'
 import type FullCalendar from '@fullcalendar/react'
@@ -11,6 +11,7 @@ import type { EventTemplate } from './components/EventModal'
 import { PriorityManager } from './components/PriorityManager'
 import type { TierDraft } from './components/PriorityManager'
 import { ReminderToaster } from './components/ReminderToaster'
+import { SuggestionsInbox } from './components/SuggestionsInbox'
 import { Auth } from './components/Auth'
 import { useAuth } from './auth/AuthProvider'
 import { supabase } from './lib/supabase'
@@ -28,6 +29,8 @@ import {
   setEventReminders,
   setEventSeriesId,
   setEventSound,
+  setEventStatus,
+  skipEvent,
   updateEvent,
   updatePriorityTier,
 } from './lib/api'
@@ -96,6 +99,8 @@ function App() {
   const [modal, setModal] = useState<ModalState>({ open: false })
   const [showPriorities, setShowPriorities] = useState(false)
   const [showExport, setShowExport] = useState(false)
+  const [showInbox, setShowInbox] = useState(false)
+  const toppedUp = useRef(false)
 
   const { data: tiers } = useQuery({
     queryKey: ['priority_tiers'],
@@ -120,7 +125,6 @@ function App() {
     queryFn: fetchSeries,
     enabled: !!session,
   })
-  void series // used from Phase 3b (inbox / top-up)
 
   const legendTiers = tiers && tiers.length ? tiers : PRIORITY_TIERS
 
@@ -129,6 +133,45 @@ function App() {
     () => (events ?? []).filter((e) => e.status !== 'skipped'),
     [events],
   )
+
+  // Upcoming projections awaiting confirmation (the Suggestions inbox).
+  const tentativeEvents = useMemo(() => {
+    const start = new Date()
+    start.setHours(0, 0, 0, 0)
+    return visibleEvents
+      .filter((e) => e.status === 'tentative' && new Date(e.starts_at) >= start)
+      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
+  }, [visibleEvents])
+
+  // Once per session, top up each series so at least the horizon stays populated
+  // as dates pass. Never projects before a series' own start date.
+  useEffect(() => {
+    if (toppedUp.current || !series || !events) return
+    toppedUp.current = true
+    if (series.length === 0) return
+    ;(async () => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      let added = 0
+      for (const s of series) {
+        if (!s.active) continue
+        const own = events.filter((e) => e.series_id === s.id)
+        const existing = new Set(own.map((e) => fmtDate(new Date(e.starts_at))))
+        const earliest = own.reduce<string | null>(
+          (min, e) => (min === null || e.starts_at < min ? e.starts_at : min),
+          null,
+        )
+        const seed = earliest ? new Date(earliest) : today
+        seed.setHours(0, 0, 0, 0)
+        const from = seed > today ? seed : today
+        added += await projectSeries(s, existing, from, addMonths(from, s.horizon_months))
+      }
+      if (added > 0) {
+        queryClient.invalidateQueries({ queryKey: ['events'] })
+        queryClient.invalidateQueries({ queryKey: ['reminders'] })
+      }
+    })()
+  }, [series, events, queryClient])
 
   const colorOf = useMemo(() => {
     const map = new Map((tiers ?? []).map((t) => [t.id, t.color]))
@@ -210,12 +253,14 @@ function App() {
       reminders: rem,
       sound,
       recurrence,
+      confirmAfter,
       id,
     }: {
       input: EventInputData
       reminders: ReminderDraft[]
       sound?: { data: string | null; name: string | null }
       recurrence?: RecurrenceValue | null
+      confirmAfter?: boolean
       id?: string
     }) => {
       let eventId = id
@@ -224,6 +269,7 @@ function App() {
       if (!eventId) return
       await setEventReminders(eventId, rem, input.starts_at)
       if (sound !== undefined) await setEventSound(eventId, sound.data, sound.name)
+      if (confirmAfter) await setEventStatus(eventId, 'confirmed')
 
       // New recurring event → create the series and project future occurrences.
       if (!id && recurrence) {
@@ -269,6 +315,30 @@ function App() {
       queryClient.invalidateQueries({ queryKey: ['reminders'] })
       setModal({ open: false })
     },
+  })
+
+  const confirmMut = useMutation({
+    mutationFn: (id: string) => setEventStatus(id, 'confirmed'),
+    onSuccess: () => {
+      invalidate()
+      setModal({ open: false })
+    },
+  })
+
+  const skipMut = useMutation({
+    mutationFn: (id: string) => skipEvent(id),
+    onSuccess: () => {
+      invalidate()
+      queryClient.invalidateQueries({ queryKey: ['reminders'] })
+      setModal({ open: false })
+    },
+  })
+
+  const confirmAllMut = useMutation({
+    mutationFn: async (ids: string[]) => {
+      for (const id of ids) await setEventStatus(id, 'confirmed')
+    },
+    onSuccess: () => invalidate(),
   })
 
   const saveTiersMut = useMutation({
@@ -372,6 +442,9 @@ function App() {
         <div className="header-actions">
           <button className="btn-primary" onClick={() => setModal({ open: true })}>
             + New event
+          </button>
+          <button className="header-btn" onClick={() => setShowInbox(true)}>
+            🔮 Suggestions{tentativeEvents.length ? ` (${tentativeEvents.length})` : ''}
           </button>
           <button
             className="header-btn"
@@ -511,8 +584,28 @@ function App() {
           onSave={(input, rem, sound, recurrence, id) =>
             saveMut.mutate({ input, reminders: rem, sound, recurrence, id })
           }
+          onConfirm={(input, rem, sound, id) =>
+            saveMut.mutate({ input, reminders: rem, sound, confirmAfter: true, id })
+          }
+          onSkip={(id) => skipMut.mutate(id)}
           onDelete={(id) => deleteMut.mutate(id)}
           onClose={() => setModal({ open: false })}
+        />
+      )}
+
+      {showInbox && (
+        <SuggestionsInbox
+          events={tentativeEvents}
+          colorOf={colorOf}
+          busy={confirmMut.isPending || skipMut.isPending || confirmAllMut.isPending}
+          onConfirm={(id) => confirmMut.mutate(id)}
+          onSkip={(id) => skipMut.mutate(id)}
+          onAdjust={(id) => {
+            setShowInbox(false)
+            openEdit(id)
+          }}
+          onConfirmAll={() => confirmAllMut.mutate(tentativeEvents.map((e) => e.id))}
+          onClose={() => setShowInbox(false)}
         />
       )}
 

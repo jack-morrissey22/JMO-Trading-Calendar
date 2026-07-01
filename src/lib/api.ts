@@ -156,6 +156,14 @@ export async function setEventStatus(eventId: string, status: string): Promise<v
   if (error) throw error
 }
 
+/** Skip a projection: hide it and drop its reminders (so it won't fire/email),
+ *  keeping the row so the series won't re-project that date. */
+export async function skipEvent(eventId: string): Promise<void> {
+  await supabase.from('reminders').delete().eq('event_id', eventId)
+  const { error } = await supabase.from('events').update({ status: 'skipped' }).eq('id', eventId)
+  if (error) throw error
+}
+
 /** Attach (or clear, with nulls) a custom reminder sound for an event. */
 export async function setEventSound(
   eventId: string,
