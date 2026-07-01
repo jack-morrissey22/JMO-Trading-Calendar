@@ -1,5 +1,6 @@
 import { Fragment } from 'react'
 import type { EventRow } from '../lib/api'
+import { coversDate, isWindow } from '../lib/events'
 
 type Props = {
   weekStart: Date // Monday of the visible week
@@ -41,18 +42,22 @@ export function WeekView({
   const days = HOURS.slice(0, 7).map((_, i) => addDays(weekStart, i))
   const today = new Date()
 
-  // Index events by day column + hour, plus per-day all-day events.
+  // Index events by day column + hour, plus per-day all-day events. All-day
+  // events (incl. multi-day windows) are added to every day column they cover.
   const timed = new Map<string, EventRow[]>()
   const allDay = new Map<number, EventRow[]>()
   for (const e of events) {
-    const d = new Date(e.starts_at)
-    const di = days.findIndex((day) => sameDay(day, d))
-    if (di === -1) continue
     if (e.all_day) {
-      const list = allDay.get(di) ?? []
-      list.push(e)
-      allDay.set(di, list)
+      days.forEach((day, i) => {
+        if (!coversDate(e, day)) return
+        const list = allDay.get(i) ?? []
+        list.push(e)
+        allDay.set(i, list)
+      })
     } else {
+      const d = new Date(e.starts_at)
+      const di = days.findIndex((day) => sameDay(day, d))
+      if (di === -1) continue
       const key = `${di}:${d.getHours()}`
       const list = timed.get(key) ?? []
       list.push(e)
@@ -66,11 +71,15 @@ export function WeekView({
 
   const bar = (e: EventRow, withTime: boolean) => {
     const d = new Date(e.starts_at)
+    const color = colorOf(e.priority_tier_id)
+    const style = isWindow(e)
+      ? { background: `${color}33`, border: `1.5px solid ${color}`, color: 'var(--text)' }
+      : { background: color }
     return (
       <button
         key={e.id}
         className="dayview-event"
-        style={{ background: colorOf(e.priority_tier_id) }}
+        style={style}
         onClick={(ev) => {
           ev.stopPropagation()
           onEventClick(e.id)

@@ -44,6 +44,7 @@ export function EventModal({
   const [allDay, setAllDay] = useState(event?.all_day ?? false)
   const [date, setDate] = useState(existingParts?.date ?? initialDate ?? '')
   const [time, setTime] = useState(existingParts?.time ?? initialTime ?? '13:30')
+  const [endDate, setEndDate] = useState(event?.ends_at ? toLocalParts(event.ends_at).date : '')
   const [priorityId, setPriorityId] = useState(
     event?.priority_tier_id ?? tiers[0]?.id ?? '',
   )
@@ -59,10 +60,14 @@ export function EventModal({
       ? new Date(`${date}T00:00:00`).toISOString()
       : new Date(`${date}T${time}:00`).toISOString()
 
+    // A window is an all-day event with an end date after the start date.
+    const ends_at =
+      allDay && endDate && endDate > date ? new Date(`${endDate}T00:00:00`).toISOString() : null
+
     const input: EventInputData = {
       title: title.trim(),
       starts_at,
-      ends_at: null,
+      ends_at,
       all_day: allDay,
       priority_tier_id: priorityId || null,
       category,
@@ -92,7 +97,7 @@ export function EventModal({
 
         <div className="field-row">
           <label className="field">
-            Date
+            {allDay ? 'Start date' : 'Date'}
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
           </label>
           {!allDay && (
@@ -101,7 +106,24 @@ export function EventModal({
               <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
             </label>
           )}
+          {allDay && (
+            <label className="field">
+              End date (optional)
+              <input
+                type="date"
+                value={endDate}
+                min={date}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </label>
+          )}
         </div>
+        {allDay && (
+          <p className="modal-hint">
+            Set an end date to make this a multi-day <strong>window</strong> (e.g. a roll period
+            or holiday).
+          </p>
+        )}
 
         <div className="field-row">
           <label className="field">

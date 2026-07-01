@@ -335,6 +335,19 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.agenda-dot {
+  box-sizing: border-box;
+}
+.agenda-window-note {
+  color: var(--text-dim);
+  font-size: 11.5px;
+}
+
+/* Windows (multi-day all-day events) read as outlined spans, not solid bars. */
+.fc .is-window {
+  border-width: 1.5px !important;
+  font-weight: 600;
+}
 
 .app-footer {
   flex-shrink: 0;

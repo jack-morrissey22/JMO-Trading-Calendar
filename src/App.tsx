@@ -23,6 +23,7 @@ import {
   updatePriorityTier,
 } from './lib/api'
 import type { EventInputData, EventRow } from './lib/api'
+import { isWindow } from './lib/events'
 import { PRIORITY_TIERS } from './data'
 import { useTheme } from './useTheme'
 import './App.css'
@@ -107,14 +108,21 @@ function App() {
     () =>
       (events ?? []).map((e) => {
         const color = colorOf(e.priority_tier_id)
+        const window = isWindow(e)
+        // FullCalendar treats an all-day `end` as exclusive, so extend by a day
+        // to make the window span its final day inclusively.
+        const end =
+          e.all_day && e.ends_at ? addDays(new Date(e.ends_at), 1) : (e.ends_at ?? undefined)
         return {
           id: e.id,
           title: e.title,
           start: e.starts_at,
-          end: e.ends_at ?? undefined,
+          end,
           allDay: e.all_day,
-          backgroundColor: color,
+          backgroundColor: window ? `${color}33` : color,
           borderColor: color,
+          textColor: window ? 'var(--text)' : '#fff',
+          classNames: window ? ['is-window'] : [],
         }
       }),
     [events, colorOf],
