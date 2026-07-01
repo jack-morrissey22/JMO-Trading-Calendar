@@ -54,7 +54,7 @@ export function AgendaView({ monthDate, events, colorOf, onEventClick }: Props) 
   const timedRow = (e: EventRow) => {
     const d = new Date(e.starts_at)
     return (
-      <button key={e.id} className="agenda-item" onClick={() => onEventClick(e.id)}>
+      <button key={e.id} className={`agenda-item${e.status === 'tentative' ? ' is-tentative' : ''}`} onClick={() => onEventClick(e.id)}>
         <span className="agenda-dot" style={{ background: colorOf(e.priority_tier_id) }} />
         <span className="agenda-time">
           {pad(d.getHours())}:{pad(d.getMinutes())}
@@ -68,7 +68,7 @@ export function AgendaView({ monthDate, events, colorOf, onEventClick }: Props) 
     const color = colorOf(e.priority_tier_id)
     const win = isWindow(e)
     return (
-      <button key={e.id} className="agenda-item" onClick={() => onEventClick(e.id)}>
+      <button key={e.id} className={`agenda-item${e.status === 'tentative' ? ' is-tentative' : ''}`} onClick={() => onEventClick(e.id)}>
         <span
           className="agenda-dot"
           style={win ? { background: 'transparent', border: `2px solid ${color}` } : { background: color }}

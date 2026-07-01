@@ -691,6 +691,88 @@
   color: var(--text);
 }
 
+/* ---- Tentative (projected, unconfirmed) events: dashed + faded ---- */
+.dayview-event.is-tentative {
+  opacity: 0.62;
+  border: 1.5px dashed var(--text) !important;
+}
+.agenda-item.is-tentative {
+  opacity: 0.62;
+}
+.fc .is-tentative {
+  border-style: dashed !important;
+  border-width: 1.5px !important;
+  opacity: 0.75;
+}
+
+/* ---- Recurrence editor ---- */
+.recur {
+  gap: 8px;
+}
+.recur-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 9px 11px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.recur-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.recur-lab {
+  font-size: 12px;
+  color: var(--text-dim);
+  min-width: 66px;
+}
+.recur-row select,
+.recur-params input,
+.recur-params select {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: inherit;
+}
+.recur-params {
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+.recur-params input {
+  width: 60px;
+}
+.recur-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.recur-chip {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.recur-chip.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.recur-summary {
+  font-size: 12px;
+  color: var(--accent);
+  margin: 2px 0 0;
+}
+
 /* ---- In-app reminder toasts ---- */
 .toast-stack {
   position: fixed;

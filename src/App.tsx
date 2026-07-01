@@ -17,17 +17,22 @@ import { supabase } from './lib/supabase'
 import {
   createEvent,
   createPriorityTier,
+  createSeries,
   deleteEvent,
   deletePriorityTier,
   fetchEvents,
   fetchPriorityTiers,
   fetchReminders,
+  fetchSeries,
+  projectSeries,
   setEventReminders,
+  setEventSeriesId,
   setEventSound,
   updateEvent,
   updatePriorityTier,
 } from './lib/api'
 import type { EventInputData, EventRow, ReminderDraft } from './lib/api'
+import type { RecurrenceValue } from './components/RecurrenceEditor'
 import { isWindow } from './lib/events'
 import { buildCsv, buildJson, downloadFile } from './lib/export'
 import { PRIORITY_TIERS } from './data'
@@ -110,7 +115,20 @@ function App() {
     enabled: !!session,
   })
 
+  const { data: series } = useQuery({
+    queryKey: ['series'],
+    queryFn: fetchSeries,
+    enabled: !!session,
+  })
+  void series // used from Phase 3b (inbox / top-up)
+
   const legendTiers = tiers && tiers.length ? tiers : PRIORITY_TIERS
+
+  // Skipped projections are hidden everywhere; tentative ones show but styled.
+  const visibleEvents = useMemo(
+    () => (events ?? []).filter((e) => e.status !== 'skipped'),
+    [events],
+  )
 
   const colorOf = useMemo(() => {
     const map = new Map((tiers ?? []).map((t) => [t.id, t.color]))
@@ -119,33 +137,38 @@ function App() {
 
   const fcEvents: EventInput[] = useMemo(
     () =>
-      (events ?? []).map((e) => {
+      visibleEvents.map((e) => {
         const color = colorOf(e.priority_tier_id)
         const window = isWindow(e)
+        const tentative = e.status === 'tentative'
         // FullCalendar treats an all-day `end` as exclusive, so extend by a day
         // to make the window span its final day inclusively.
         const end =
           e.all_day && e.ends_at ? addDays(new Date(e.ends_at), 1) : (e.ends_at ?? undefined)
+        const classNames = [
+          ...(window ? ['is-window'] : []),
+          ...(tentative ? ['is-tentative'] : []),
+        ]
         return {
           id: e.id,
           title: e.title,
           start: e.starts_at,
           end,
           allDay: e.all_day,
-          backgroundColor: window ? `${color}33` : color,
+          backgroundColor: window || tentative ? `${color}33` : color,
           borderColor: color,
-          textColor: window ? 'var(--text)' : '#fff',
-          classNames: window ? ['is-window'] : [],
+          textColor: window || tentative ? 'var(--text)' : '#fff',
+          classNames,
         }
       }),
-    [events, colorOf],
+    [visibleEvents, colorOf],
   )
 
   // Cyclical memory: the most recent entry per event title, with its reminders,
   // used to pre-fill a new event of the same name.
   const templates: EventTemplate[] = useMemo(() => {
     const byTitle = new Map<string, EventRow>()
-    for (const e of events ?? []) {
+    for (const e of visibleEvents) {
       const prev = byTitle.get(e.title)
       if (!prev || new Date(e.starts_at) > new Date(prev.starts_at)) byTitle.set(e.title, e)
     }
@@ -177,7 +200,7 @@ function App() {
         reminders: remByEvent.get(e.id) ?? [],
       }
     })
-  }, [events, reminders])
+  }, [visibleEvents, reminders])
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['events'] })
 
@@ -186,11 +209,13 @@ function App() {
       input,
       reminders: rem,
       sound,
+      recurrence,
       id,
     }: {
       input: EventInputData
       reminders: ReminderDraft[]
       sound?: { data: string | null; name: string | null }
+      recurrence?: RecurrenceValue | null
       id?: string
     }) => {
       let eventId = id
@@ -199,10 +224,40 @@ function App() {
       if (!eventId) return
       await setEventReminders(eventId, rem, input.starts_at)
       if (sound !== undefined) await setEventSound(eventId, sound.data, sound.name)
+
+      // New recurring event → create the series and project future occurrences.
+      if (!id && recurrence) {
+        const start = new Date(input.starts_at)
+        const time_of_day = input.all_day
+          ? null
+          : `${pad(start.getHours())}:${pad(start.getMinutes())}:00`
+        const window_days =
+          input.all_day && input.ends_at
+            ? Math.max(1, Math.round((new Date(input.ends_at).getTime() - start.getTime()) / 86_400_000))
+            : null
+        const s = await createSeries({
+          title: input.title,
+          time_of_day,
+          all_day: input.all_day,
+          window_days,
+          priority_tier_id: input.priority_tier_id,
+          category: input.category,
+          tags: input.tags,
+          speak: input.speak,
+          reminders: rem,
+          rule: recurrence.rule,
+          horizon_months: recurrence.horizonMonths,
+          active: true,
+        })
+        await setEventSeriesId(eventId, s.id)
+        const from = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+        await projectSeries(s, new Set([fmtDate(from)]), from, addMonths(from, recurrence.horizonMonths))
+      }
     },
     onSuccess: () => {
       invalidate()
       queryClient.invalidateQueries({ queryKey: ['reminders'] })
+      queryClient.invalidateQueries({ queryKey: ['series'] })
       setModal({ open: false })
     },
   })
@@ -384,7 +439,7 @@ function App() {
           {view === 'day' ? (
             <DayView
               date={focusDate}
-              events={events ?? []}
+              events={visibleEvents}
               colorOf={colorOf}
               onEventClick={openEdit}
               onSlotClick={(hour) => openCreateAt(focusDate, hour)}
@@ -392,7 +447,7 @@ function App() {
           ) : view === 'week' ? (
             <WeekView
               weekStart={startOfWeek(focusDate)}
-              events={events ?? []}
+              events={visibleEvents}
               colorOf={colorOf}
               onEventClick={openEdit}
               onSlotClick={openCreateAt}
@@ -404,7 +459,7 @@ function App() {
           ) : view === 'agenda' ? (
             <AgendaView
               monthDate={focusDate}
-              events={events ?? []}
+              events={visibleEvents}
               colorOf={colorOf}
               onEventClick={openEdit}
             />
@@ -453,8 +508,8 @@ function App() {
               : []
           }
           busy={saveMut.isPending || deleteMut.isPending}
-          onSave={(input, rem, sound, id) =>
-            saveMut.mutate({ input, reminders: rem, sound, id })
+          onSave={(input, rem, sound, recurrence, id) =>
+            saveMut.mutate({ input, reminders: rem, sound, recurrence, id })
           }
           onDelete={(id) => deleteMut.mutate(id)}
           onClose={() => setModal({ open: false })}
@@ -462,7 +517,7 @@ function App() {
       )}
 
       <ReminderToaster
-        events={events ?? []}
+        events={visibleEvents}
         reminders={reminders ?? []}
         onOpen={(id) => openEdit(id)}
       />

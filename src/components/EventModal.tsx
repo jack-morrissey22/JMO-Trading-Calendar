@@ -5,6 +5,8 @@ import type { EventInputData, EventRow, ReminderDraft } from '../lib/api'
 import type { EventCategory, PriorityTier } from '../types'
 import { PRESETS, labelReminder, relative } from '../lib/reminders'
 import { playClip } from '../lib/sound'
+import { RecurrenceEditor } from './RecurrenceEditor'
+import type { RecurrenceValue } from './RecurrenceEditor'
 
 // undefined = leave the existing sound untouched; otherwise replace/clear it.
 export type SoundChange = { data: string | null; name: string | null } | undefined
@@ -57,6 +59,7 @@ export type EventModalProps = {
     input: EventInputData,
     reminders: ReminderDraft[],
     sound: SoundChange,
+    recurrence: RecurrenceValue | null,
     id?: string,
   ) => void
   onDelete: (id: string) => void
@@ -78,6 +81,7 @@ export function EventModal({
   const editing = !!event
   const existingParts = event ? toLocalParts(event.starts_at) : null
   const [showSuggest, setShowSuggest] = useState(false)
+  const [recurrence, setRecurrence] = useState<RecurrenceValue | null>(null)
 
   const [title, setTitle] = useState(event?.title ?? '')
   const [allDay, setAllDay] = useState(event?.all_day ?? false)
@@ -210,7 +214,7 @@ export function EventModal({
       speak,
     }
     const sound: SoundChange = soundChanged ? { data: soundData, name: soundName } : undefined
-    onSave(input, reminders, sound, event?.id)
+    onSave(input, reminders, sound, editing ? null : recurrence, event?.id)
   }
 
   return (
@@ -425,6 +429,8 @@ export function EventModal({
             is closed). A custom clip plays instead of the spoken name.
           </p>
         </div>
+
+        {!editing && <RecurrenceEditor seedDate={date} onChange={setRecurrence} />}
 
         <div className="modal-actions">
           {editing && (

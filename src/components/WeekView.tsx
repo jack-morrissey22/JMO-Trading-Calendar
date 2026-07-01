@@ -78,7 +78,7 @@ export function WeekView({
     return (
       <button
         key={e.id}
-        className="dayview-event"
+        className={`dayview-event${e.status === 'tentative' ? ' is-tentative' : ''}`}
         style={style}
         onClick={(ev) => {
           ev.stopPropagation()

@@ -48,7 +48,7 @@ export function DayView({ date, events, colorOf, onEventClick, onSlotClick }: Pr
             {allDay.map((e) => (
               <button
                 key={e.id}
-                className="dayview-event"
+                className={`dayview-event${e.status === 'tentative' ? ' is-tentative' : ''}`}
                 style={barStyle(colorOf(e.priority_tier_id), isWindow(e))}
                 onClick={() => onEventClick(e.id)}
               >
@@ -70,7 +70,7 @@ export function DayView({ date, events, colorOf, onEventClick, onSlotClick }: Pr
                 return (
                   <button
                     key={e.id}
-                    className="dayview-event"
+                    className={`dayview-event${e.status === 'tentative' ? ' is-tentative' : ''}`}
                     style={{ background: colorOf(e.priority_tier_id) }}
                     onClick={(ev) => {
                       ev.stopPropagation()
