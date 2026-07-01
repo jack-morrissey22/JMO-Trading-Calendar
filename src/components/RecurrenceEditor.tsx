@@ -6,7 +6,65 @@ export type RecurrenceValue = { rule: RecurrenceRule; horizonMonths: number }
 
 type Props = {
   seedDate?: string // YYYY-MM-DD of the event being created, for sensible defaults
+  initial?: RecurrenceValue // pre-fill when editing an existing series
   onChange: (v: RecurrenceValue | null) => void // pass a STABLE setter (e.g. useState setter)
+}
+
+// Reverse-map an existing rule (or nothing) into the editor's field defaults.
+function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
+  const base = {
+    repeats: false,
+    mode: 'monthly' as 'monthly' | 'weekly',
+    monthsPreset: 'all' as 'all' | 'quarterly' | 'yearly' | 'custom',
+    customMonths: [seed.getMonth() + 1],
+    yearlyMonth: seed.getMonth() + 1,
+    dayType: 'nth_weekday' as DayRule['type'],
+    nth: 1,
+    weekday: seed.getDay(),
+    dayOfMonth: seed.getDate(),
+    roll: 'next' as 'next' | 'prev' | 'none',
+    nthLast: 1,
+    offsetDay: 25,
+    offsetDays: -7,
+    weeklyDays: [seed.getDay()],
+    horizonMonths: 3,
+  }
+  if (!initial) return base
+  base.repeats = true
+  base.horizonMonths = initial.horizonMonths
+  const rule = initial.rule
+  if (rule.mode === 'weekly') {
+    base.mode = 'weekly'
+    base.weeklyDays = rule.weekdays
+    return base
+  }
+  base.mode = 'monthly'
+  const m = rule.months
+  base.monthsPreset =
+    m.length === 12
+      ? 'all'
+      : m.length === 4 && [3, 6, 9, 12].every((x) => m.includes(x))
+        ? 'quarterly'
+        : m.length === 1
+          ? 'yearly'
+          : 'custom'
+  base.customMonths = m
+  base.yearlyMonth = m[0] ?? seed.getMonth() + 1
+  const d = rule.day
+  base.dayType = d.type
+  if (d.type === 'nth_weekday') {
+    base.nth = d.nth
+    base.weekday = d.weekday
+  } else if (d.type === 'day_of_month') {
+    base.dayOfMonth = d.day
+    base.roll = d.roll
+  } else if (d.type === 'nth_last_bizday') {
+    base.nthLast = d.nth
+  } else if (d.type === 'offset_snap') {
+    base.offsetDay = d.day
+    base.offsetDays = d.offsetDays
+  }
+  return base
 }
 
 const WEEKDAYS = [
@@ -36,24 +94,28 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 const HORIZONS = [1, 2, 3, 6, 12]
 
-export function RecurrenceEditor({ seedDate, onChange }: Props) {
+export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
   const seed = seedDate ? new Date(`${seedDate}T00:00:00`) : new Date()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const D = useMemo(() => deriveInit(initial, seed), [])
 
-  const [repeats, setRepeats] = useState(false)
-  const [mode, setMode] = useState<'monthly' | 'weekly'>('monthly')
-  const [monthsPreset, setMonthsPreset] = useState<'all' | 'quarterly' | 'yearly' | 'custom'>('all')
-  const [customMonths, setCustomMonths] = useState<number[]>([seed.getMonth() + 1])
-  const [yearlyMonth, setYearlyMonth] = useState(seed.getMonth() + 1)
-  const [dayType, setDayType] = useState<DayRule['type']>('nth_weekday')
-  const [nth, setNth] = useState(1)
-  const [weekday, setWeekday] = useState(seed.getDay())
-  const [dayOfMonth, setDayOfMonth] = useState(seed.getDate())
-  const [roll, setRoll] = useState<'next' | 'prev' | 'none'>('next')
-  const [nthLast, setNthLast] = useState(1)
-  const [offsetDay, setOffsetDay] = useState(25)
-  const [offsetDays, setOffsetDays] = useState(-7)
-  const [weeklyDays, setWeeklyDays] = useState<number[]>([seed.getDay()])
-  const [horizonMonths, setHorizonMonths] = useState(3)
+  const [repeats, setRepeats] = useState(D.repeats)
+  const [mode, setMode] = useState<'monthly' | 'weekly'>(D.mode)
+  const [monthsPreset, setMonthsPreset] = useState<'all' | 'quarterly' | 'yearly' | 'custom'>(
+    D.monthsPreset,
+  )
+  const [customMonths, setCustomMonths] = useState<number[]>(D.customMonths)
+  const [yearlyMonth, setYearlyMonth] = useState(D.yearlyMonth)
+  const [dayType, setDayType] = useState<DayRule['type']>(D.dayType)
+  const [nth, setNth] = useState(D.nth)
+  const [weekday, setWeekday] = useState(D.weekday)
+  const [dayOfMonth, setDayOfMonth] = useState(D.dayOfMonth)
+  const [roll, setRoll] = useState<'next' | 'prev' | 'none'>(D.roll)
+  const [nthLast, setNthLast] = useState(D.nthLast)
+  const [offsetDay, setOffsetDay] = useState(D.offsetDay)
+  const [offsetDays, setOffsetDays] = useState(D.offsetDays)
+  const [weeklyDays, setWeeklyDays] = useState<number[]>(D.weeklyDays)
+  const [horizonMonths, setHorizonMonths] = useState(D.horizonMonths)
 
   const rule = useMemo<RecurrenceRule | null>(() => {
     if (!repeats) return null

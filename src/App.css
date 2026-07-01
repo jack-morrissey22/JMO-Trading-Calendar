@@ -834,6 +834,18 @@
   color: var(--text-dim);
 }
 
+/* ---- Series management (edit / delete a repeat) ---- */
+.recur-manage {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.recur-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 /* ---- In-app reminder toasts ---- */
 .toast-stack {
   position: fixed;

@@ -21,6 +21,8 @@ import {
   createSeries,
   deleteEvent,
   deletePriorityTier,
+  deleteSeriesFully,
+  deleteSeriesTentatives,
   fetchEvents,
   fetchPriorityTiers,
   fetchReminders,
@@ -33,6 +35,7 @@ import {
   skipEvent,
   updateEvent,
   updatePriorityTier,
+  updateSeries,
 } from './lib/api'
 import type { EventInputData, EventRow, ReminderDraft } from './lib/api'
 import type { RecurrenceValue } from './components/RecurrenceEditor'
@@ -341,6 +344,40 @@ function App() {
     onSuccess: () => invalidate(),
   })
 
+  const invalidateAll = () => {
+    invalidate()
+    queryClient.invalidateQueries({ queryKey: ['series'] })
+    queryClient.invalidateQueries({ queryKey: ['reminders'] })
+    setModal({ open: false })
+  }
+
+  // Edit a repeat: save the new rule, drop old tentatives, re-project fresh
+  // (keeping confirmed occurrences).
+  const updateSeriesMut = useMutation({
+    mutationFn: async ({ seriesId, rec }: { seriesId: string; rec: RecurrenceValue }) => {
+      const s = await updateSeries(seriesId, { rule: rec.rule, horizon_months: rec.horizonMonths })
+      await deleteSeriesTentatives(seriesId)
+      const own = (events ?? []).filter((e) => e.series_id === seriesId && e.status !== 'tentative')
+      const existing = new Set(own.map((e) => fmtDate(new Date(e.starts_at))))
+      const earliest = own.reduce<string | null>(
+        (min, e) => (min === null || e.starts_at < min ? e.starts_at : min),
+        null,
+      )
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const seed = earliest ? new Date(earliest) : today
+      seed.setHours(0, 0, 0, 0)
+      const from = seed > today ? seed : today
+      await projectSeries(s, existing, from, addMonths(from, rec.horizonMonths))
+    },
+    onSuccess: invalidateAll,
+  })
+
+  const deleteSeriesMut = useMutation({
+    mutationFn: (seriesId: string) => deleteSeriesFully(seriesId),
+    onSuccess: invalidateAll,
+  })
+
   const saveTiersMut = useMutation({
     mutationFn: async ({
       tiers: finalTiers,
@@ -563,6 +600,11 @@ function App() {
         <EventModal
           tiers={legendTiers}
           event={modal.event}
+          series={
+            modal.event?.series_id
+              ? (series ?? []).find((s) => s.id === modal.event!.series_id)
+              : undefined
+          }
           templates={templates}
           initialDate={modal.initialDate}
           initialTime={modal.initialTime}
@@ -580,7 +622,13 @@ function App() {
                   }))
               : []
           }
-          busy={saveMut.isPending || deleteMut.isPending}
+          busy={
+            saveMut.isPending ||
+            deleteMut.isPending ||
+            skipMut.isPending ||
+            updateSeriesMut.isPending ||
+            deleteSeriesMut.isPending
+          }
           onSave={(input, rem, sound, recurrence, id) =>
             saveMut.mutate({ input, reminders: rem, sound, recurrence, id })
           }
@@ -588,6 +636,8 @@ function App() {
             saveMut.mutate({ input, reminders: rem, sound, confirmAfter: true, id })
           }
           onSkip={(id) => skipMut.mutate(id)}
+          onUpdateSeries={(seriesId, rec) => updateSeriesMut.mutate({ seriesId, rec })}
+          onDeleteSeries={(seriesId) => deleteSeriesMut.mutate(seriesId)}
           onDelete={(id) => deleteMut.mutate(id)}
           onClose={() => setModal({ open: false })}
         />

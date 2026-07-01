@@ -284,8 +284,31 @@ export async function createSeries(input: SeriesInput): Promise<SeriesRow> {
   return data as SeriesRow
 }
 
-export async function deleteSeries(id: string): Promise<void> {
-  const { error } = await supabase.from('series').delete().eq('id', id)
+export async function updateSeries(
+  id: string,
+  patch: Partial<SeriesInput>,
+): Promise<SeriesRow> {
+  const { data, error } = await supabase.from('series').update(patch).eq('id', id).select().single()
+  if (error) throw error
+  return data as SeriesRow
+}
+
+/** Delete only the unconfirmed (tentative) occurrences of a series (their
+ *  reminders cascade). Confirmed ones are kept. */
+export async function deleteSeriesTentatives(seriesId: string): Promise<void> {
+  const { error } = await supabase
+    .from('events')
+    .delete()
+    .eq('series_id', seriesId)
+    .eq('status', 'tentative')
+  if (error) throw error
+}
+
+/** Stop a repeat: remove its tentative future occurrences and the series row.
+ *  Confirmed occurrences are kept (their series_id becomes null). */
+export async function deleteSeriesFully(seriesId: string): Promise<void> {
+  await deleteSeriesTentatives(seriesId)
+  const { error } = await supabase.from('series').delete().eq('id', seriesId)
   if (error) throw error
 }
 

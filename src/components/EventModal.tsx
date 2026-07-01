@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { fetchEventSound } from '../lib/api'
-import type { EventInputData, EventRow, ReminderDraft } from '../lib/api'
+import type { EventInputData, EventRow, ReminderDraft, SeriesRow } from '../lib/api'
 import type { EventCategory, PriorityTier } from '../types'
 import { PRESETS, labelReminder, relative } from '../lib/reminders'
 import { playClip } from '../lib/sound'
@@ -50,6 +50,8 @@ export type EventModalProps = {
   tiers: PriorityTier[]
   /** Existing event when editing; otherwise a starting date for a new event. */
   event?: EventRow
+  /** The series this event belongs to (for editing the repeat). */
+  series?: SeriesRow
   templates?: EventTemplate[]
   initialDate?: string
   initialTime?: string
@@ -69,6 +71,8 @@ export type EventModalProps = {
     id: string,
   ) => void
   onSkip?: (id: string) => void
+  onUpdateSeries?: (seriesId: string, recurrence: RecurrenceValue) => void
+  onDeleteSeries?: (seriesId: string) => void
   onDelete: (id: string) => void
   onClose: () => void
 }
@@ -76,6 +80,7 @@ export type EventModalProps = {
 export function EventModal({
   tiers,
   event,
+  series,
   templates,
   initialDate,
   initialTime,
@@ -84,6 +89,8 @@ export function EventModal({
   onSave,
   onConfirm,
   onSkip,
+  onUpdateSeries,
+  onDeleteSeries,
   onDelete,
   onClose,
 }: EventModalProps) {
@@ -450,7 +457,36 @@ export function EventModal({
           </p>
         </div>
 
-        {!editing && <RecurrenceEditor seedDate={date} onChange={setRecurrence} />}
+        {!editing ? (
+          <RecurrenceEditor seedDate={date} onChange={setRecurrence} />
+        ) : series && !tentative ? (
+          <div className="recur-manage">
+            <div className="modal-hint">🔁 This event repeats — editing the pattern updates the whole series.</div>
+            <RecurrenceEditor
+              seedDate={date}
+              initial={{ rule: series.rule, horizonMonths: series.horizon_months }}
+              onChange={setRecurrence}
+            />
+            <div className="recur-actions">
+              <button
+                type="button"
+                className="btn-ghost"
+                disabled={busy}
+                onClick={() => recurrence && onUpdateSeries?.(series.id, recurrence)}
+              >
+                Update repeat & re-project
+              </button>
+              <button
+                type="button"
+                className="btn-danger"
+                disabled={busy}
+                onClick={() => onDeleteSeries?.(series.id)}
+              >
+                Stop repeating
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {tentative && (
           <p className="modal-hint tentative-hint">
