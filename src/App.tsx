@@ -158,6 +158,7 @@ function App() {
         days_before: r.days_before,
         at_time: r.at_time,
         channel: r.channel,
+        email: r.email,
       })
       remByEvent.set(r.event_id, list)
     }
@@ -196,7 +197,7 @@ function App() {
       if (id) await updateEvent(id, input)
       else eventId = (await createEvent(input)).id
       if (!eventId) return
-      await setEventReminders(eventId, rem)
+      await setEventReminders(eventId, rem, input.starts_at)
       if (sound !== undefined) await setEventSound(eventId, sound.data, sound.name)
     },
     onSuccess: () => {
@@ -441,12 +442,13 @@ function App() {
             modal.event
               ? (reminders ?? [])
                   .filter((r) => r.event_id === modal.event!.id)
-                  .map(({ kind, minutes_before, days_before, at_time, channel }) => ({
+                  .map(({ kind, minutes_before, days_before, at_time, channel, email }) => ({
                     kind,
                     minutes_before,
                     days_before,
                     at_time,
                     channel,
+                    email,
                   }))
               : []
           }

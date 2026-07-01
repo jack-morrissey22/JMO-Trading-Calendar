@@ -615,6 +615,22 @@
   cursor: pointer;
   line-height: 1;
 }
+.reminder-email {
+  background: rgba(255, 255, 255, 0.18);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  padding: 2px 5px;
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+.reminder-email.on {
+  opacity: 1;
+  filter: none;
+  background: rgba(255, 255, 255, 0.35);
+}
 .reminder-add select,
 .reminder-custom input,
 .reminder-custom select {

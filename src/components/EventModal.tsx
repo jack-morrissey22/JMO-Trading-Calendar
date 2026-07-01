@@ -175,6 +175,8 @@ export function EventModal({
 
   const addReminder = (r: ReminderDraft) => setReminders((rs) => [...rs, r])
   const removeReminder = (i: number) => setReminders((rs) => rs.filter((_, j) => j !== i))
+  const toggleEmail = (i: number) =>
+    setReminders((rs) => rs.map((r, j) => (j === i ? { ...r, email: !r.email } : r)))
   const addCustom = () => {
     const n = parseInt(customVal, 10)
     if (!Number.isFinite(n) || n < 1) return
@@ -332,8 +334,16 @@ export function EventModal({
           {reminders.length > 0 && (
             <div className="reminder-chips">
               {reminders.map((r, i) => (
-                <span className="reminder-chip" key={i}>
+                <span className={`reminder-chip${r.email ? ' has-email' : ''}`} key={i}>
                   {labelReminder(r)}
+                  <button
+                    type="button"
+                    className={`reminder-email${r.email ? ' on' : ''}`}
+                    onClick={() => toggleEmail(i)}
+                    title={r.email ? 'Emailing you — click for in-app only' : 'Also email me'}
+                  >
+                    📧
+                  </button>
                   <button
                     type="button"
                     className="reminder-chip-x"
@@ -411,8 +421,8 @@ export function EventModal({
           </div>
           {soundError && <div className="auth-error">{soundError}</div>}
           <p className="modal-hint">
-            A custom clip plays instead of the spoken name. In-app while the calendar is open.
-            (Email in a later step.)
+            Reminders pop up in-app; tap 📧 on one to also email it to you (even when the app
+            is closed). A custom clip plays instead of the spoken name.
           </p>
         </div>
 

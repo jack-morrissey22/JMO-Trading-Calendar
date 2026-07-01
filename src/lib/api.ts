@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { reminderFireTime } from './reminders'
 import type { PriorityTier } from '../types'
 
 // Fetch the signed-in user's priority tiers (seeded with defaults on signup).
@@ -171,6 +172,8 @@ export type ReminderDraft = {
   days_before: number | null
   at_time: string | null
   channel: string
+  /** Also send this reminder by email (delivered even when the app is closed). */
+  email: boolean
 }
 
 export type ReminderRow = ReminderDraft & { id: string; event_id: string }
@@ -178,13 +181,18 @@ export type ReminderRow = ReminderDraft & { id: string; event_id: string }
 export async function fetchReminders(): Promise<ReminderRow[]> {
   const { data, error } = await supabase
     .from('reminders')
-    .select('id, event_id, kind, minutes_before, days_before, at_time, channel')
+    .select('id, event_id, kind, minutes_before, days_before, at_time, channel, email')
   if (error) throw error
   return (data ?? []) as ReminderRow[]
 }
 
-/** Replace all reminders for an event with the given set (delete + insert). */
-export async function setEventReminders(eventId: string, drafts: ReminderDraft[]): Promise<void> {
+/** Replace all reminders for an event with the given set (delete + insert).
+ *  fire_at (UTC, for the email sender) is computed from the event's start. */
+export async function setEventReminders(
+  eventId: string,
+  drafts: ReminderDraft[],
+  startsAt: string,
+): Promise<void> {
   const { data: userRes } = await supabase.auth.getUser()
   const user_id = userRes.user?.id
   const del = await supabase.from('reminders').delete().eq('event_id', eventId)
@@ -197,6 +205,9 @@ export async function setEventReminders(eventId: string, drafts: ReminderDraft[]
     minutes_before: d.minutes_before,
     days_before: d.days_before,
     at_time: d.at_time,
+    email: d.email,
+    fire_at: reminderFireTime(d, { starts_at: startsAt } as EventRow).toISOString(),
+    sent_at: null,
     channel: d.channel,
   }))
   const ins = await supabase.from('reminders').insert(rows)

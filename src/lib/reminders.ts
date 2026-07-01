@@ -1,10 +1,24 @@
 import type { EventRow, ReminderDraft } from './api'
 
 export function relative(minutes: number): ReminderDraft {
-  return { kind: 'relative', minutes_before: minutes, days_before: null, at_time: null, channel: 'inapp' }
+  return {
+    kind: 'relative',
+    minutes_before: minutes,
+    days_before: null,
+    at_time: null,
+    channel: 'inapp',
+    email: false,
+  }
 }
 export function fixed(daysBefore: number, atTime: string): ReminderDraft {
-  return { kind: 'fixed', minutes_before: null, days_before: daysBefore, at_time: atTime, channel: 'inapp' }
+  return {
+    kind: 'fixed',
+    minutes_before: null,
+    days_before: daysBefore,
+    at_time: atTime,
+    channel: 'inapp',
+    email: false,
+  }
 }
 
 export const PRESETS: { label: string; make: () => ReminderDraft }[] = [
