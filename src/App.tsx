@@ -22,6 +22,7 @@ import {
   fetchPriorityTiers,
   fetchReminders,
   setEventReminders,
+  setEventSound,
   updateEvent,
   updatePriorityTier,
 } from './lib/api'
@@ -143,16 +144,20 @@ function App() {
     mutationFn: async ({
       input,
       reminders: rem,
+      sound,
       id,
     }: {
       input: EventInputData
       reminders: ReminderDraft[]
+      sound?: { data: string | null; name: string | null }
       id?: string
     }) => {
       let eventId = id
       if (id) await updateEvent(id, input)
       else eventId = (await createEvent(input)).id
-      if (eventId) await setEventReminders(eventId, rem)
+      if (!eventId) return
+      await setEventReminders(eventId, rem)
+      if (sound !== undefined) await setEventSound(eventId, sound.data, sound.name)
     },
     onSuccess: () => {
       invalidate()
@@ -369,7 +374,9 @@ function App() {
               : []
           }
           busy={saveMut.isPending || deleteMut.isPending}
-          onSave={(input, rem, id) => saveMut.mutate({ input, reminders: rem, id })}
+          onSave={(input, rem, sound, id) =>
+            saveMut.mutate({ input, reminders: rem, sound, id })
+          }
           onDelete={(id) => deleteMut.mutate(id)}
           onClose={() => setModal({ open: false })}
         />

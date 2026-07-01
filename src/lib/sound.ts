@@ -15,6 +15,16 @@ export function primeSound() {
   if (c && c.state === 'suspended') c.resume().catch(() => {})
 }
 
+/** Play a custom reminder clip from a data URI (or URL). */
+export function playClip(src: string) {
+  try {
+    const audio = new Audio(src)
+    audio.play().catch(() => {})
+  } catch {
+    /* audio unavailable — ignore */
+  }
+}
+
 /** Speak text aloud via the browser's speech engine (for 'speak the name'). */
 export function speak(text: string) {
   try {

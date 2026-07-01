@@ -1,8 +1,15 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { fetchEventSound } from '../lib/api'
 import type { EventInputData, EventRow, ReminderDraft } from '../lib/api'
 import type { EventCategory, PriorityTier } from '../types'
 import { PRESETS, labelReminder, relative } from '../lib/reminders'
+import { playClip } from '../lib/sound'
+
+// undefined = leave the existing sound untouched; otherwise replace/clear it.
+export type SoundChange = { data: string | null; name: string | null } | undefined
+
+const MAX_SOUND_BYTES = 1_000_000
 
 const CATEGORIES: EventCategory[] = ['Macro/Economic', 'Expiry', 'Custom']
 
@@ -30,7 +37,12 @@ export type EventModalProps = {
   initialTime?: string
   initialReminders?: ReminderDraft[]
   busy?: boolean
-  onSave: (input: EventInputData, reminders: ReminderDraft[], id?: string) => void
+  onSave: (
+    input: EventInputData,
+    reminders: ReminderDraft[],
+    sound: SoundChange,
+    id?: string,
+  ) => void
   onDelete: (id: string) => void
   onClose: () => void
 }
@@ -63,6 +75,43 @@ export function EventModal({
 
   const [speak, setSpeak] = useState(event?.speak ?? false)
   const [reminders, setReminders] = useState<ReminderDraft[]>(initialReminders ?? [])
+
+  // Custom sound: soundName reflects the current attachment; soundData holds a
+  // freshly uploaded clip; soundChanged marks whether to persist a change.
+  const [soundName, setSoundName] = useState<string | null>(event?.sound_name ?? null)
+  const [soundData, setSoundData] = useState<string | null>(null)
+  const [soundChanged, setSoundChanged] = useState(false)
+  const [soundError, setSoundError] = useState<string | null>(null)
+
+  const onSoundFile = (file: File | undefined) => {
+    if (!file) return
+    if (file.size > MAX_SOUND_BYTES) {
+      setSoundError('Clip too large — keep it under ~1 MB (a few seconds).')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      setSoundData(reader.result as string)
+      setSoundName(file.name)
+      setSoundChanged(true)
+      setSoundError(null)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const removeSound = () => {
+    setSoundData(null)
+    setSoundName(null)
+    setSoundChanged(true)
+  }
+
+  const previewSound = async () => {
+    if (soundData) playClip(soundData)
+    else if (event?.id) {
+      const d = await fetchEventSound(event.id)
+      if (d) playClip(d)
+    }
+  }
   const [customVal, setCustomVal] = useState('30')
   const [customUnit, setCustomUnit] = useState(0)
 
@@ -100,7 +149,8 @@ export function EventModal({
       notes: notes.trim() || null,
       speak,
     }
-    onSave(input, reminders, event?.id)
+    const sound: SoundChange = soundChanged ? { data: soundData, name: soundName } : undefined
+    onSave(input, reminders, sound, event?.id)
   }
 
   return (
@@ -244,7 +294,34 @@ export function EventModal({
             <input type="checkbox" checked={speak} onChange={(e) => setSpeak(e.target.checked)} />
             🔊 Speak the event name aloud when a reminder fires
           </label>
-          <p className="modal-hint">In-app pop-ups while the calendar is open. (Email in a later step.)</p>
+
+          <div className="sound-row">
+            {soundName ? (
+              <>
+                <span className="sound-name">🎵 {soundName}</span>
+                <button type="button" className="btn-ghost sound-btn" onClick={previewSound}>
+                  ▶ Preview
+                </button>
+                <button type="button" className="btn-ghost sound-btn" onClick={removeSound}>
+                  Remove
+                </button>
+              </>
+            ) : (
+              <label className="sound-upload">
+                Custom sound clip
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={(e) => onSoundFile(e.target.files?.[0])}
+                />
+              </label>
+            )}
+          </div>
+          {soundError && <div className="auth-error">{soundError}</div>}
+          <p className="modal-hint">
+            A custom clip plays instead of the spoken name. In-app while the calendar is open.
+            (Email in a later step.)
+          </p>
         </div>
 
         <div className="modal-actions">

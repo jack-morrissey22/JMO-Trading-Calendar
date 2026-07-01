@@ -58,6 +58,9 @@ export type EventRow = {
   notes: string | null
   /** Speak the event name aloud when a reminder fires (stored in extra). */
   speak: boolean
+  /** Filename of an attached custom reminder sound (null = none). The audio
+   *  itself (sound_data) is fetched on demand, not in the list query. */
+  sound_name: string | null
 }
 
 export type EventInputData = {
@@ -85,6 +88,7 @@ function mapEventRow(r: any): EventRow {
     tags: r.tags,
     notes: r.notes,
     speak: !!(r.extra && r.extra.speak),
+    sound_name: r.sound_name ?? null,
   }
 }
 
@@ -97,7 +101,9 @@ function rowFromInput(input: EventInputData) {
 export async function fetchEvents(): Promise<EventRow[]> {
   const { data, error } = await supabase
     .from('events')
-    .select('id, title, starts_at, ends_at, all_day, priority_tier_id, category, tags, notes, extra')
+    .select(
+      'id, title, starts_at, ends_at, all_day, priority_tier_id, category, tags, notes, extra, sound_name',
+    )
     .order('starts_at')
   if (error) throw error
   return (data ?? []).map(mapEventRow)
@@ -129,6 +135,30 @@ export async function updateEvent(id: string, input: EventInputData): Promise<Ev
 export async function deleteEvent(id: string): Promise<void> {
   const { error } = await supabase.from('events').delete().eq('id', id)
   if (error) throw error
+}
+
+/** Attach (or clear, with nulls) a custom reminder sound for an event. */
+export async function setEventSound(
+  eventId: string,
+  dataUri: string | null,
+  name: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('events')
+    .update({ sound_data: dataUri, sound_name: name })
+    .eq('id', eventId)
+  if (error) throw error
+}
+
+/** Fetch an event's custom sound data URI on demand (null if none). */
+export async function fetchEventSound(eventId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('events')
+    .select('sound_data')
+    .eq('id', eventId)
+    .single()
+  if (error) throw error
+  return (data?.sound_data as string | null) ?? null
 }
 
 // ---------------------------------------------------------------------------

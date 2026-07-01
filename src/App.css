@@ -610,6 +610,37 @@
 .reminder-custom-add {
   padding: 6px 12px;
 }
+.sound-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+.sound-name {
+  color: var(--text);
+  font-size: 13px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sound-btn {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+.sound-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+.sound-upload input[type='file'] {
+  font-size: 12px;
+  color: var(--text);
+}
 
 /* ---- In-app reminder toasts ---- */
 .toast-stack {
