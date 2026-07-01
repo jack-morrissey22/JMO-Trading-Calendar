@@ -76,6 +76,12 @@
   flex: 1;
   min-height: 0;
   padding: 12px 16px;
+  overflow-y: auto;
+}
+
+/* Keep quiet days a sensible size while busy days expand to fit every event. */
+.fc .fc-daygrid-day-frame {
+  min-height: 92px;
 }
 
 .app-footer {

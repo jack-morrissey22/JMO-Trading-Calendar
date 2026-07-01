@@ -33,8 +33,8 @@ export function TradingCalendar({ events, onDateClick, onEventClick }: Props) {
       }}
       firstDay={1}
       nowIndicator
-      dayMaxEvents={4}
-      height="100%"
+      dayMaxEvents={false}
+      height="auto"
       eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
       slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
       events={events}
