@@ -7,6 +7,7 @@ import { DayView } from './components/DayView'
 import { WeekView } from './components/WeekView'
 import { AgendaView } from './components/AgendaView'
 import { EventModal } from './components/EventModal'
+import type { EventTemplate } from './components/EventModal'
 import { PriorityManager } from './components/PriorityManager'
 import type { TierDraft } from './components/PriorityManager'
 import { ReminderToaster } from './components/ReminderToaster'
@@ -137,6 +138,43 @@ function App() {
       }),
     [events, colorOf],
   )
+
+  // Cyclical memory: the most recent entry per event title, with its reminders,
+  // used to pre-fill a new event of the same name.
+  const templates: EventTemplate[] = useMemo(() => {
+    const byTitle = new Map<string, EventRow>()
+    for (const e of events ?? []) {
+      const prev = byTitle.get(e.title)
+      if (!prev || new Date(e.starts_at) > new Date(prev.starts_at)) byTitle.set(e.title, e)
+    }
+    const remByEvent = new Map<string, ReminderDraft[]>()
+    for (const r of reminders ?? []) {
+      const list = remByEvent.get(r.event_id) ?? []
+      list.push({
+        kind: r.kind,
+        minutes_before: r.minutes_before,
+        days_before: r.days_before,
+        at_time: r.at_time,
+        channel: r.channel,
+      })
+      remByEvent.set(r.event_id, list)
+    }
+    return [...byTitle.values()].map((e) => {
+      const d = new Date(e.starts_at)
+      return {
+        title: e.title,
+        sourceId: e.id,
+        time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+        all_day: e.all_day,
+        priority_tier_id: e.priority_tier_id,
+        category: e.category,
+        tags: e.tags,
+        speak: e.speak,
+        sound_name: e.sound_name,
+        reminders: remByEvent.get(e.id) ?? [],
+      }
+    })
+  }, [events, reminders])
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['events'] })
 
@@ -358,6 +396,7 @@ function App() {
         <EventModal
           tiers={legendTiers}
           event={modal.event}
+          templates={templates}
           initialDate={modal.initialDate}
           initialTime={modal.initialTime}
           initialReminders={

@@ -9,6 +9,21 @@ import { playClip } from '../lib/sound'
 // undefined = leave the existing sound untouched; otherwise replace/clear it.
 export type SoundChange = { data: string | null; name: string | null } | undefined
 
+// A remembered event: the most recent entry of a given title, used to pre-fill
+// a new one (the "cyclical memory" — the events table itself is the memory).
+export type EventTemplate = {
+  title: string
+  sourceId: string
+  time: string
+  all_day: boolean
+  priority_tier_id: string | null
+  category: string
+  tags: string[]
+  speak: boolean
+  sound_name: string | null
+  reminders: ReminderDraft[]
+}
+
 const MAX_SOUND_BYTES = 1_000_000
 
 const CATEGORIES: EventCategory[] = ['Macro/Economic', 'Expiry', 'Custom']
@@ -33,6 +48,7 @@ export type EventModalProps = {
   tiers: PriorityTier[]
   /** Existing event when editing; otherwise a starting date for a new event. */
   event?: EventRow
+  templates?: EventTemplate[]
   initialDate?: string
   initialTime?: string
   initialReminders?: ReminderDraft[]
@@ -50,6 +66,7 @@ export type EventModalProps = {
 export function EventModal({
   tiers,
   event,
+  templates,
   initialDate,
   initialTime,
   initialReminders,
@@ -60,6 +77,7 @@ export function EventModal({
 }: EventModalProps) {
   const editing = !!event
   const existingParts = event ? toLocalParts(event.starts_at) : null
+  const [showSuggest, setShowSuggest] = useState(false)
 
   const [title, setTitle] = useState(event?.title ?? '')
   const [allDay, setAllDay] = useState(event?.all_day ?? false)
@@ -112,6 +130,46 @@ export function EventModal({
       if (d) playClip(d)
     }
   }
+
+  // Recall everything from a past entry of this event (except the date).
+  const applyTemplate = (t: EventTemplate) => {
+    setTitle(t.title)
+    setAllDay(t.all_day)
+    setTime(t.time)
+    setPriorityId(t.priority_tier_id ?? tiers[0]?.id ?? '')
+    setCategory(t.category)
+    setTags(t.tags.join(', '))
+    setSpeak(t.speak)
+    setReminders(t.reminders)
+    if (t.sound_name) {
+      fetchEventSound(t.sourceId).then((d) => {
+        if (d) {
+          setSoundData(d)
+          setSoundName(t.sound_name)
+          setSoundChanged(true)
+        }
+      })
+    } else {
+      setSoundData(null)
+      setSoundName(null)
+      setSoundChanged(true)
+    }
+    setShowSuggest(false)
+  }
+
+  const tierName = (id: string | null) => tiers.find((t) => t.id === id)?.name ?? '—'
+  const q = title.trim().toLowerCase()
+  const matches =
+    !editing && showSuggest && q.length >= 1 && templates
+      ? templates
+          .filter((t) => t.title.toLowerCase().includes(q) && t.title.toLowerCase() !== q)
+          .sort(
+            (a, b) =>
+              (a.title.toLowerCase().startsWith(q) ? 0 : 1) -
+              (b.title.toLowerCase().startsWith(q) ? 0 : 1),
+          )
+          .slice(0, 6)
+      : []
   const [customVal, setCustomVal] = useState('30')
   const [customUnit, setCustomUnit] = useState(0)
 
@@ -158,10 +216,44 @@ export function EventModal({
       <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={onSubmit}>
         <h2 className="modal-title">{editing ? 'Edit event' : 'New event'}</h2>
 
-        <label className="field">
+        <div className="field title-field">
           Title
-          <input value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus />
-        </label>
+          <input
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value)
+              setShowSuggest(true)
+            }}
+            onFocus={() => setShowSuggest(true)}
+            onBlur={() => setTimeout(() => setShowSuggest(false), 150)}
+            required
+            autoFocus
+          />
+          {matches.length > 0 && (
+            <ul className="suggest-list">
+              {matches.map((t) => (
+                <li key={t.sourceId}>
+                  <button
+                    type="button"
+                    className="suggest-item"
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      applyTemplate(t)
+                    }}
+                  >
+                    <span className="suggest-title">{t.title}</span>
+                    <span className="suggest-meta">
+                      {t.all_day ? 'all day' : t.time} · {tierName(t.priority_tier_id)}
+                      {t.reminders.length > 0
+                        ? ` · ${t.reminders.length} reminder${t.reminders.length > 1 ? 's' : ''}`
+                        : ''}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         <label className="field-check">
           <input type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} />
