@@ -258,6 +258,8 @@ export type SeriesRow = {
   rule: RecurrenceRule
   horizon_months: number
   active: boolean
+  sound_data: string | null // inline base64 clip; every occurrence inherits it
+  sound_name: string | null // filename / "has a custom sound" flag
 }
 
 export type SeriesInput = Omit<SeriesRow, 'id'>
@@ -266,7 +268,7 @@ export async function fetchSeries(): Promise<SeriesRow[]> {
   const { data, error } = await supabase
     .from('series')
     .select(
-      'id, title, time_of_day, all_day, window_days, priority_tier_id, category, tags, speak, reminders, rule, horizon_months, active',
+      'id, title, time_of_day, all_day, window_days, priority_tier_id, category, tags, speak, reminders, rule, horizon_months, active, sound_data, sound_name',
     )
   if (error) throw error
   return (data ?? []) as SeriesRow[]
@@ -291,6 +293,20 @@ export async function updateSeries(
   const { data, error } = await supabase.from('series').update(patch).eq('id', id).select().single()
   if (error) throw error
   return data as SeriesRow
+}
+
+/** Push a sound change to every existing occurrence of a series (confirmed +
+ *  tentative), so an added/changed/removed clip takes effect across the board. */
+export async function setSeriesEventsSound(
+  seriesId: string,
+  dataUri: string | null,
+  name: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('events')
+    .update({ sound_data: dataUri, sound_name: name })
+    .eq('series_id', seriesId)
+  if (error) throw error
 }
 
 /** Delete only the unconfirmed (tentative) occurrences of a series (their
@@ -350,6 +366,8 @@ export async function projectSeries(
     tags: series.tags,
     notes: null,
     extra: { speak: series.speak },
+    sound_data: series.sound_data,
+    sound_name: series.sound_name,
   }))
 
   const { data: inserted, error } = await supabase

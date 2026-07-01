@@ -32,12 +32,14 @@ import {
   setEventSeriesId,
   setEventSound,
   setEventStatus,
+  setSeriesEventsSound,
   skipEvent,
   updateEvent,
   updatePriorityTier,
   updateSeries,
 } from './lib/api'
-import type { EventInputData, EventRow, ReminderDraft } from './lib/api'
+import type { EventInputData, EventRow, ReminderDraft, SeriesInput } from './lib/api'
+import type { SoundChange } from './components/EventModal'
 import type { RecurrenceValue } from './components/RecurrenceEditor'
 import { isWindow } from './lib/events'
 import type { RecurrenceRule } from './lib/recurrence'
@@ -319,6 +321,8 @@ function App() {
           rule: recurrence.rule,
           horizon_months: recurrence.horizonMonths,
           active: true,
+          sound_data: sound?.data ?? null,
+          sound_name: sound?.name ?? null,
         })
         await setEventSeriesId(eventId, s.id)
         const seedDay = new Date(start.getFullYear(), start.getMonth(), start.getDate())
@@ -378,9 +382,25 @@ function App() {
   // Edit a repeat: save the new rule, drop old tentatives, re-project fresh
   // (keeping confirmed occurrences).
   const updateSeriesMut = useMutation({
-    mutationFn: async ({ seriesId, rec }: { seriesId: string; rec: RecurrenceValue }) => {
-      const s = await updateSeries(seriesId, { rule: rec.rule, horizon_months: rec.horizonMonths })
+    mutationFn: async ({
+      seriesId,
+      rec,
+      sound,
+    }: {
+      seriesId: string
+      rec: RecurrenceValue
+      sound?: SoundChange
+    }) => {
+      const patch: Partial<SeriesInput> = { rule: rec.rule, horizon_months: rec.horizonMonths }
+      if (sound !== undefined) {
+        patch.sound_data = sound.data
+        patch.sound_name = sound.name
+      }
+      const s = await updateSeries(seriesId, patch)
       await deleteSeriesTentatives(seriesId)
+      // Propagate a sound change to the kept (confirmed) occurrences; fresh
+      // tentatives below inherit it from the series row.
+      if (sound !== undefined) await setSeriesEventsSound(seriesId, sound.data, sound.name)
       const own = (events ?? []).filter((e) => e.series_id === seriesId && e.status !== 'tentative')
       const existing = new Set(own.map((e) => fmtDate(new Date(e.starts_at))))
       const { from, to } = boundsFor(own, rec.rule, rec.horizonMonths)
@@ -675,7 +695,7 @@ function App() {
             saveMut.mutate({ input, reminders: rem, sound, confirmAfter: true, id })
           }
           onSkip={(id) => skipMut.mutate(id)}
-          onUpdateSeries={(seriesId, rec) => updateSeriesMut.mutate({ seriesId, rec })}
+          onUpdateSeries={(seriesId, rec, sound) => updateSeriesMut.mutate({ seriesId, rec, sound })}
           onExtendSeries={(seriesId, toDate) => extendSeriesMut.mutate({ seriesId, toDate })}
           onDeleteSeries={(seriesId) => deleteSeriesMut.mutate(seriesId)}
           onDelete={(id) => deleteMut.mutate(id)}

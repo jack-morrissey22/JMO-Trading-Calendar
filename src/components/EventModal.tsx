@@ -71,7 +71,7 @@ export type EventModalProps = {
     id: string,
   ) => void
   onSkip?: (id: string) => void
-  onUpdateSeries?: (seriesId: string, recurrence: RecurrenceValue) => void
+  onUpdateSeries?: (seriesId: string, recurrence: RecurrenceValue, sound: SoundChange) => void
   onExtendSeries?: (seriesId: string, toDate: string) => void
   onDeleteSeries?: (seriesId: string) => void
   onDelete: (id: string) => void
@@ -475,7 +475,14 @@ export function EventModal({
                 type="button"
                 className="btn-ghost"
                 disabled={busy}
-                onClick={() => recurrence && onUpdateSeries?.(series.id, recurrence)}
+                onClick={() =>
+                  recurrence &&
+                  onUpdateSeries?.(
+                    series.id,
+                    recurrence,
+                    soundChanged ? { data: soundData, name: soundName } : undefined,
+                  )
+                }
               >
                 Update repeat & re-project
               </button>
