@@ -40,6 +40,7 @@ import {
 import type { EventInputData, EventRow, ReminderDraft } from './lib/api'
 import type { RecurrenceValue } from './components/RecurrenceEditor'
 import { isWindow } from './lib/events'
+import type { RecurrenceRule } from './lib/recurrence'
 import { buildCsv, buildJson, downloadFile } from './lib/export'
 import { PRIORITY_TIERS } from './data'
 import { useTheme } from './useTheme'
@@ -75,9 +76,16 @@ const dayStart = (iso: string) => {
 // Projection window for a series: keep `horizon` months of occurrences ahead of
 // the LAST CONFIRMED one (or today) — so confirming the latest pulls in the next
 // batch. `from` never precedes the series' own start.
-function boundsFor(own: EventRow[], horizonMonths: number): { from: Date; to: Date } {
+function boundsFor(
+  own: EventRow[],
+  rule: RecurrenceRule,
+  horizonMonths: number,
+): { from: Date; to: Date } {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+  // Manual series have an explicit date list, not a rolling window — materialise
+  // all future listed dates.
+  if (rule.mode === 'manual') return { from: today, to: addMonths(today, 600) }
   const seed = own.length
     ? new Date(Math.min(...own.map((e) => dayStart(e.starts_at).getTime())))
     : new Date(today)
@@ -180,7 +188,7 @@ function App() {
         if (!s.active) continue
         const own = events.filter((e) => e.series_id === s.id)
         const existing = new Set(own.map((e) => fmtDate(new Date(e.starts_at))))
-        const { from, to } = boundsFor(own, s.horizon_months)
+        const { from, to } = boundsFor(own, s.rule, s.horizon_months)
         added += await projectSeries(s, existing, from, to)
       }
       if (added > 0) {
@@ -314,15 +322,9 @@ function App() {
         })
         await setEventSeriesId(eventId, s.id)
         const seedDay = new Date(start.getFullYear(), start.getMonth(), start.getDate())
-        const today0 = new Date()
-        today0.setHours(0, 0, 0, 0)
-        const anchor = seedDay > today0 ? seedDay : today0
-        await projectSeries(
-          s,
-          new Set([fmtDate(seedDay)]),
-          anchor,
-          addMonths(anchor, recurrence.horizonMonths),
-        )
+        const ownSeed = [{ starts_at: input.starts_at, status: 'confirmed' } as EventRow]
+        const { from, to } = boundsFor(ownSeed, recurrence.rule, recurrence.horizonMonths)
+        await projectSeries(s, new Set([fmtDate(seedDay)]), from, to)
       }
     },
     onSuccess: () => {
@@ -381,7 +383,7 @@ function App() {
       await deleteSeriesTentatives(seriesId)
       const own = (events ?? []).filter((e) => e.series_id === seriesId && e.status !== 'tentative')
       const existing = new Set(own.map((e) => fmtDate(new Date(e.starts_at))))
-      const { from, to } = boundsFor(own, rec.horizonMonths)
+      const { from, to } = boundsFor(own, rec.rule, rec.horizonMonths)
       await projectSeries(s, existing, from, to)
     },
     onSuccess: invalidateAll,

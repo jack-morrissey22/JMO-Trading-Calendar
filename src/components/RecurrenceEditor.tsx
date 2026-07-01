@@ -14,7 +14,8 @@ type Props = {
 function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
   const base = {
     repeats: false,
-    mode: 'monthly' as 'monthly' | 'weekly',
+    mode: 'monthly' as 'monthly' | 'weekly' | 'manual',
+    manualText: '',
     monthsPreset: 'all' as 'all' | 'quarterly' | 'yearly' | 'custom',
     customMonths: [seed.getMonth() + 1],
     yearlyMonth: seed.getMonth() + 1,
@@ -33,6 +34,11 @@ function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
   base.repeats = true
   base.horizonMonths = initial.horizonMonths
   const rule = initial.rule
+  if (rule.mode === 'manual') {
+    base.mode = 'manual'
+    base.manualText = rule.dates.join('\n')
+    return base
+  }
   if (rule.mode === 'weekly') {
     base.mode = 'weekly'
     base.weeklyDays = rule.weekdays
@@ -94,13 +100,31 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 const HORIZONS = [1, 2, 3, 6, 12]
 
+const pad2 = (n: number) => String(n).padStart(2, '0')
+// Parse a pasted blob of dates (newline/comma separated) into YYYY-MM-DD strings.
+function parseManualDates(text: string): string[] {
+  return text
+    .split(/[\n,;]+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+      const d = new Date(s)
+      return isNaN(d.getTime())
+        ? null
+        : `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+    })
+    .filter((x): x is string => !!x)
+}
+
 export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
   const seed = seedDate ? new Date(`${seedDate}T00:00:00`) : new Date()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const D = useMemo(() => deriveInit(initial, seed), [])
 
   const [repeats, setRepeats] = useState(D.repeats)
-  const [mode, setMode] = useState<'monthly' | 'weekly'>(D.mode)
+  const [mode, setMode] = useState<'monthly' | 'weekly' | 'manual'>(D.mode)
+  const [manualText, setManualText] = useState(D.manualText)
   const [monthsPreset, setMonthsPreset] = useState<'all' | 'quarterly' | 'yearly' | 'custom'>(
     D.monthsPreset,
   )
@@ -119,6 +143,9 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
 
   const rule = useMemo<RecurrenceRule | null>(() => {
     if (!repeats) return null
+    if (mode === 'manual') {
+      return { mode: 'manual', dates: parseManualDates(manualText) }
+    }
     if (mode === 'weekly') {
       return { mode: 'weekly', weekdays: [...weeklyDays].sort() }
     }
@@ -137,8 +164,8 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
     else day = { type: 'offset_snap', day: offsetDay, offsetDays }
     return { mode: 'monthly', months, day }
   }, [
-    repeats, mode, monthsPreset, customMonths, yearlyMonth, dayType, nth, weekday, dayOfMonth,
-    roll, nthLast, offsetDay, offsetDays, weeklyDays,
+    repeats, mode, manualText, monthsPreset, customMonths, yearlyMonth, dayType, nth, weekday,
+    dayOfMonth, roll, nthLast, offsetDay, offsetDays, weeklyDays,
   ])
 
   useEffect(() => {
@@ -159,13 +186,32 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
         <div className="recur-body">
           <div className="recur-row">
             <span className="recur-lab">Frequency</span>
-            <select value={mode} onChange={(e) => setMode(e.target.value as 'monthly' | 'weekly')}>
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value as 'monthly' | 'weekly' | 'manual')}
+            >
               <option value="monthly">Monthly-based</option>
               <option value="weekly">Weekly</option>
+              <option value="manual">Manual dates</option>
             </select>
           </div>
 
-          {mode === 'weekly' ? (
+          {mode === 'manual' ? (
+            <div className="recur-row recur-manual">
+              <span className="recur-lab">Dates</span>
+              <div className="recur-manual-body">
+                <textarea
+                  rows={5}
+                  placeholder={'One date per line, e.g.\n2026-07-30\n2026-09-17'}
+                  value={manualText}
+                  onChange={(e) => setManualText(e.target.value)}
+                />
+                <span className="recur-manual-count">
+                  {parseManualDates(manualText).length} date(s) recognised
+                </span>
+              </div>
+            </div>
+          ) : mode === 'weekly' ? (
             <div className="recur-row">
               <span className="recur-lab">On</span>
               <div className="recur-chips">
@@ -297,20 +343,26 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
             </>
           )}
 
-          <div className="recur-row">
-            <span className="recur-lab">Project</span>
-            <select value={horizonMonths} onChange={(e) => setHorizonMonths(Number(e.target.value))}>
-              {HORIZONS.map((h) => (
-                <option key={h} value={h}>
-                  {h} month{h > 1 ? 's' : ''} ahead
-                </option>
-              ))}
-            </select>
-          </div>
+          {mode !== 'manual' && (
+            <div className="recur-row">
+              <span className="recur-lab">Project</span>
+              <select
+                value={horizonMonths}
+                onChange={(e) => setHorizonMonths(Number(e.target.value))}
+              >
+                {HORIZONS.map((h) => (
+                  <option key={h} value={h}>
+                    {h} month{h > 1 ? 's' : ''} ahead
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {rule && (
             <p className="recur-summary">
-              ↪ {describeRule(rule)} · projecting {horizonMonths} month{horizonMonths > 1 ? 's' : ''}{' '}
+              ↪ {describeRule(rule)}
+              {mode !== 'manual' && ` · projecting ${horizonMonths} month${horizonMonths > 1 ? 's' : ''}`}{' '}
               (tentative until you confirm each)
             </p>
           )}

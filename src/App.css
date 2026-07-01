@@ -772,6 +772,31 @@
   color: var(--accent);
   margin: 2px 0 0;
 }
+.recur-manual {
+  align-items: flex-start;
+}
+.recur-manual-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.recur-manual-body textarea {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: inherit;
+  resize: vertical;
+  width: 100%;
+}
+.recur-manual-count {
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
 
 /* ---- Suggestions inbox ---- */
 .tentative-hint {
