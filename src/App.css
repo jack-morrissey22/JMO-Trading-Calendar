@@ -140,6 +140,9 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
+  /* Keep the day as a focused column rather than stretching edge-to-edge on
+     wide screens (roughly a single Week-view day column wide). */
+  max-width: 380px;
 }
 .dayview-row {
   display: flex;
