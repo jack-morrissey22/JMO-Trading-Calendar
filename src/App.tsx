@@ -7,15 +7,20 @@ import { DayView } from './components/DayView'
 import { WeekView } from './components/WeekView'
 import { AgendaView } from './components/AgendaView'
 import { EventModal } from './components/EventModal'
+import { PriorityManager } from './components/PriorityManager'
+import type { TierDraft } from './components/PriorityManager'
 import { Auth } from './components/Auth'
 import { useAuth } from './auth/AuthProvider'
 import { supabase } from './lib/supabase'
 import {
   createEvent,
+  createPriorityTier,
   deleteEvent,
+  deletePriorityTier,
   fetchEvents,
   fetchPriorityTiers,
   updateEvent,
+  updatePriorityTier,
 } from './lib/api'
 import type { EventInputData, EventRow } from './lib/api'
 import { PRIORITY_TIERS } from './data'
@@ -77,6 +82,7 @@ function App() {
   const [focusDate, setFocusDate] = useState<Date>(new Date())
   const [fcTitle, setFcTitle] = useState('')
   const [modal, setModal] = useState<ModalState>({ open: false })
+  const [showPriorities, setShowPriorities] = useState(false)
 
   const { data: tiers } = useQuery({
     queryKey: ['priority_tiers'],
@@ -130,6 +136,28 @@ function App() {
     onSuccess: () => {
       invalidate()
       setModal({ open: false })
+    },
+  })
+
+  const saveTiersMut = useMutation({
+    mutationFn: async ({
+      tiers: finalTiers,
+      deletedIds,
+    }: {
+      tiers: TierDraft[]
+      deletedIds: string[]
+    }) => {
+      for (const id of deletedIds) await deletePriorityTier(id)
+      for (let i = 0; i < finalTiers.length; i++) {
+        const t = finalTiers[i]
+        if (t.id) await updatePriorityTier(t.id, { name: t.name, color: t.color, rank: i })
+        else await createPriorityTier({ name: t.name, color: t.color, rank: i })
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['priority_tiers'] })
+      queryClient.invalidateQueries({ queryKey: ['events'] })
+      setShowPriorities(false)
     },
   })
 
@@ -195,6 +223,13 @@ function App() {
         <div className="header-actions">
           <button className="btn-primary" onClick={() => setModal({ open: true })}>
             + New event
+          </button>
+          <button
+            className="header-btn"
+            onClick={() => setShowPriorities(true)}
+            disabled={!tiers || tiers.length === 0}
+          >
+            ⚙ Priorities
           </button>
           <button className="theme-toggle" onClick={toggle} aria-label="Toggle light/dark theme">
             {theme === 'dark' ? '☀ Light' : '☾ Dark'}
@@ -293,6 +328,17 @@ function App() {
           onSave={(input, id) => saveMut.mutate({ input, id })}
           onDelete={(id) => deleteMut.mutate(id)}
           onClose={() => setModal({ open: false })}
+        />
+      )}
+
+      {showPriorities && (
+        <PriorityManager
+          tiers={tiers ?? []}
+          busy={saveTiersMut.isPending}
+          onSave={(finalTiers, deletedIds) =>
+            saveTiersMut.mutate({ tiers: finalTiers, deletedIds })
+          }
+          onClose={() => setShowPriorities(false)}
         />
       )}
     </div>

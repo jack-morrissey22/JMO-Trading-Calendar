@@ -445,6 +445,99 @@
 .theme-toggle {
   margin-left: 0;
 }
+.header-btn {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.header-btn:hover {
+  background: var(--hover);
+}
+.header-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ---- Priority manager ---- */
+.modal-hint {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: -4px 0 4px;
+}
+.tier-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tier-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tier-reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.tier-move {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 8px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+.tier-move:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.tier-color {
+  width: 34px;
+  height: 30px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-2);
+  cursor: pointer;
+}
+.tier-name {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 8px 10px;
+  font-size: 14px;
+  color: var(--text);
+}
+.tier-name:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.tier-del {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 6px 9px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.tier-del:hover {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.5);
+}
+.tier-add {
+  align-self: flex-start;
+  margin-top: 4px;
+}
 
 /* ---- Loading / auth ---- */
 .centered {

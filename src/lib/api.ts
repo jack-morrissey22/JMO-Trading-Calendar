@@ -17,6 +17,31 @@ export async function fetchPriorityTiers(): Promise<PriorityTier[]> {
   }))
 }
 
+export async function createPriorityTier(input: {
+  name: string
+  color: string
+  rank: number
+  triggers_email?: boolean
+}) {
+  const { data: userRes } = await supabase.auth.getUser()
+  const user_id = userRes.user?.id
+  const { error } = await supabase.from('priority_tiers').insert({ ...input, user_id })
+  if (error) throw error
+}
+
+export async function updatePriorityTier(
+  id: string,
+  input: { name?: string; color?: string; rank?: number; triggers_email?: boolean },
+) {
+  const { error } = await supabase.from('priority_tiers').update(input).eq('id', id)
+  if (error) throw error
+}
+
+export async function deletePriorityTier(id: string) {
+  const { error } = await supabase.from('priority_tiers').delete().eq('id', id)
+  if (error) throw error
+}
+
 // ---------------------------------------------------------------------------
 // Events
 // ---------------------------------------------------------------------------
