@@ -65,6 +65,28 @@ const addMonths = (d: Date, n: number) => {
   return r
 }
 const monthTitle = (d: Date) => d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+
+const dayStart = (iso: string) => {
+  const d = new Date(iso)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+// Projection window for a series: keep `horizon` months of occurrences ahead of
+// the LAST CONFIRMED one (or today) — so confirming the latest pulls in the next
+// batch. `from` never precedes the series' own start.
+function boundsFor(own: EventRow[], horizonMonths: number): { from: Date; to: Date } {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const seed = own.length
+    ? new Date(Math.min(...own.map((e) => dayStart(e.starts_at).getTime())))
+    : new Date(today)
+  const confirmed = own.filter((e) => e.status === 'confirmed').map((e) => dayStart(e.starts_at).getTime())
+  const lastConfirmed = confirmed.length ? Math.max(...confirmed) : null
+  const from = seed > today ? seed : today
+  const anchor = lastConfirmed && lastConfirmed > today.getTime() ? new Date(lastConfirmed) : today
+  return { from, to: addMonths(anchor, horizonMonths) }
+}
 const startOfWeek = (d: Date) => {
   const r = new Date(d)
   r.setHours(0, 0, 0, 0)
@@ -153,21 +175,13 @@ function App() {
     toppedUp.current = true
     if (series.length === 0) return
     ;(async () => {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
       let added = 0
       for (const s of series) {
         if (!s.active) continue
         const own = events.filter((e) => e.series_id === s.id)
         const existing = new Set(own.map((e) => fmtDate(new Date(e.starts_at))))
-        const earliest = own.reduce<string | null>(
-          (min, e) => (min === null || e.starts_at < min ? e.starts_at : min),
-          null,
-        )
-        const seed = earliest ? new Date(earliest) : today
-        seed.setHours(0, 0, 0, 0)
-        const from = seed > today ? seed : today
-        added += await projectSeries(s, existing, from, addMonths(from, s.horizon_months))
+        const { from, to } = boundsFor(own, s.horizon_months)
+        added += await projectSeries(s, existing, from, to)
       }
       if (added > 0) {
         queryClient.invalidateQueries({ queryKey: ['events'] })
@@ -299,8 +313,16 @@ function App() {
           active: true,
         })
         await setEventSeriesId(eventId, s.id)
-        const from = new Date(start.getFullYear(), start.getMonth(), start.getDate())
-        await projectSeries(s, new Set([fmtDate(from)]), from, addMonths(from, recurrence.horizonMonths))
+        const seedDay = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+        const today0 = new Date()
+        today0.setHours(0, 0, 0, 0)
+        const anchor = seedDay > today0 ? seedDay : today0
+        await projectSeries(
+          s,
+          new Set([fmtDate(seedDay)]),
+          anchor,
+          addMonths(anchor, recurrence.horizonMonths),
+        )
       }
     },
     onSuccess: () => {
@@ -359,16 +381,8 @@ function App() {
       await deleteSeriesTentatives(seriesId)
       const own = (events ?? []).filter((e) => e.series_id === seriesId && e.status !== 'tentative')
       const existing = new Set(own.map((e) => fmtDate(new Date(e.starts_at))))
-      const earliest = own.reduce<string | null>(
-        (min, e) => (min === null || e.starts_at < min ? e.starts_at : min),
-        null,
-      )
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const seed = earliest ? new Date(earliest) : today
-      seed.setHours(0, 0, 0, 0)
-      const from = seed > today ? seed : today
-      await projectSeries(s, existing, from, addMonths(from, rec.horizonMonths))
+      const { from, to } = boundsFor(own, rec.horizonMonths)
+      await projectSeries(s, existing, from, to)
     },
     onSuccess: invalidateAll,
   })
