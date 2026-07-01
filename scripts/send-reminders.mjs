@@ -55,10 +55,27 @@ for (const r of due) {
 
   const ev = r.events || {}
   const start = new Date(ev.starts_at)
-  const when = ev.all_day
+  const title = ev.title || 'Event'
+
+  // Compact date/time for the subject (so a day-before email shows *when*).
+  const dateShort = start.toLocaleDateString('en-GB', {
+    timeZone: tz,
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  })
+  const timeShort = start.toLocaleTimeString('en-GB', {
+    timeZone: tz,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  const subjectWhen = ev.all_day ? dateShort : `${dateShort} ${timeShort}`
+
+  // Full form for the body.
+  const whenFull = ev.all_day
     ? start.toLocaleDateString('en-GB', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long' })
     : start.toLocaleString('en-GB', { timeZone: tz, dateStyle: 'full', timeStyle: 'short' })
-  const title = ev.title || 'Event'
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -66,8 +83,8 @@ for (const r of due) {
     body: JSON.stringify({
       from,
       to,
-      subject: `Reminder: ${title}`,
-      text: `${title}\n${when}\n\n— JMO Trading Calendar`,
+      subject: `Reminder: ${title} — ${subjectWhen}`,
+      text: `${title}\n${whenFull}\n\n— JMO Trading Calendar`,
     }),
   })
   if (!res.ok) {
