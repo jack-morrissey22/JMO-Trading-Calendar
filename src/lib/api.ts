@@ -56,6 +56,8 @@ export type EventRow = {
   category: string
   tags: string[]
   notes: string | null
+  /** Speak the event name aloud when a reminder fires (stored in extra). */
+  speak: boolean
 }
 
 export type EventInputData = {
@@ -67,15 +69,38 @@ export type EventInputData = {
   category: string
   tags: string[]
   notes?: string | null
+  speak: boolean
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapEventRow(r: any): EventRow {
+  return {
+    id: r.id,
+    title: r.title,
+    starts_at: r.starts_at,
+    ends_at: r.ends_at,
+    all_day: r.all_day,
+    priority_tier_id: r.priority_tier_id,
+    category: r.category,
+    tags: r.tags,
+    notes: r.notes,
+    speak: !!(r.extra && r.extra.speak),
+  }
+}
+
+// Additive per-event options live in the JSONB `extra` column (no migration).
+function rowFromInput(input: EventInputData) {
+  const { speak, ...rest } = input
+  return { ...rest, extra: { speak: !!speak } }
 }
 
 export async function fetchEvents(): Promise<EventRow[]> {
   const { data, error } = await supabase
     .from('events')
-    .select('id, title, starts_at, ends_at, all_day, priority_tier_id, category, tags, notes')
+    .select('id, title, starts_at, ends_at, all_day, priority_tier_id, category, tags, notes, extra')
     .order('starts_at')
   if (error) throw error
-  return data ?? []
+  return (data ?? []).map(mapEventRow)
 }
 
 export async function createEvent(input: EventInputData): Promise<EventRow> {
@@ -83,22 +108,22 @@ export async function createEvent(input: EventInputData): Promise<EventRow> {
   const user_id = userRes.user?.id
   const { data, error } = await supabase
     .from('events')
-    .insert({ ...input, user_id })
+    .insert({ ...rowFromInput(input), user_id })
     .select()
     .single()
   if (error) throw error
-  return data as EventRow
+  return mapEventRow(data)
 }
 
 export async function updateEvent(id: string, input: EventInputData): Promise<EventRow> {
   const { data, error } = await supabase
     .from('events')
-    .update(input)
+    .update(rowFromInput(input))
     .eq('id', id)
     .select()
     .single()
   if (error) throw error
-  return data as EventRow
+  return mapEventRow(data)
 }
 
 export async function deleteEvent(id: string): Promise<void> {

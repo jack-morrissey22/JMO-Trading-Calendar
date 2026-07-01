@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { EventRow, ReminderRow } from '../lib/api'
 import { reminderFireTime } from '../lib/reminders'
-import { playChime, primeSound } from '../lib/sound'
+import { playChime, primeSound, speak } from '../lib/sound'
 
 const STORAGE_KEY = 'jmo-shown-reminders'
 const GRACE_MS = 8 * 60 * 60 * 1000 // only surface reminders that fired within 8h
@@ -56,6 +56,7 @@ export function ReminderToaster({
       const now = Date.now()
       const byId = new Map(events.map((e) => [e.id, e]))
       const fresh: Toast[] = []
+      const toSpeak = new Set<string>()
       for (const r of reminders) {
         const ev = byId.get(r.event_id)
         if (!ev) continue
@@ -64,12 +65,14 @@ export function ReminderToaster({
         if (ft <= now && now - ft < GRACE_MS && !shownRef.current.has(key)) {
           shownRef.current.add(key)
           fresh.push({ key, title: ev.title, when: whenLabel(ev), eventId: ev.id })
+          if (ev.speak) toSpeak.add(ev.title)
         }
       }
       if (fresh.length) {
         setToasts((t) => [...t, ...fresh])
         saveShown(shownRef.current)
         playChime()
+        if (toSpeak.size) speak([...toSpeak].join('. '))
       }
     }
     check()

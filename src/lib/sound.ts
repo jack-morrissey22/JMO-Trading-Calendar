@@ -15,6 +15,19 @@ export function primeSound() {
   if (c && c.state === 'suspended') c.resume().catch(() => {})
 }
 
+/** Speak text aloud via the browser's speech engine (for 'speak the name'). */
+export function speak(text: string) {
+  try {
+    if (!('speechSynthesis' in window)) return
+    const u = new SpeechSynthesisUtterance(text)
+    u.rate = 1
+    u.pitch = 1
+    window.speechSynthesis.speak(u)
+  } catch {
+    /* speech unavailable — ignore */
+  }
+}
+
 /** A short two-note chime, the default reminder sound. */
 export function playChime() {
   const c = audioCtx()

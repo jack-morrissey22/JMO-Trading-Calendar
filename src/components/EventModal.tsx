@@ -61,6 +61,7 @@ export function EventModal({
   const [tags, setTags] = useState((event?.tags ?? []).join(', '))
   const [notes, setNotes] = useState(event?.notes ?? '')
 
+  const [speak, setSpeak] = useState(event?.speak ?? false)
   const [reminders, setReminders] = useState<ReminderDraft[]>(initialReminders ?? [])
   const [customVal, setCustomVal] = useState('30')
   const [customUnit, setCustomUnit] = useState(0)
@@ -97,6 +98,7 @@ export function EventModal({
         .map((t) => t.trim())
         .filter(Boolean),
       notes: notes.trim() || null,
+      speak,
     }
     onSave(input, reminders, event?.id)
   }
@@ -238,6 +240,10 @@ export function EventModal({
               Add
             </button>
           </div>
+          <label className="field-check">
+            <input type="checkbox" checked={speak} onChange={(e) => setSpeak(e.target.checked)} />
+            🔊 Speak the event name aloud when a reminder fires
+          </label>
           <p className="modal-hint">In-app pop-ups while the calendar is open. (Email in a later step.)</p>
         </div>
 
