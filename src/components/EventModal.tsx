@@ -20,6 +20,7 @@ export type EventModalProps = {
   /** Existing event when editing; otherwise a starting date for a new event. */
   event?: EventRow
   initialDate?: string
+  initialTime?: string
   busy?: boolean
   onSave: (input: EventInputData, id?: string) => void
   onDelete: (id: string) => void
@@ -30,6 +31,7 @@ export function EventModal({
   tiers,
   event,
   initialDate,
+  initialTime,
   busy,
   onSave,
   onDelete,
@@ -41,7 +43,7 @@ export function EventModal({
   const [title, setTitle] = useState(event?.title ?? '')
   const [allDay, setAllDay] = useState(event?.all_day ?? false)
   const [date, setDate] = useState(existingParts?.date ?? initialDate ?? '')
-  const [time, setTime] = useState(existingParts?.time ?? '13:30')
+  const [time, setTime] = useState(existingParts?.time ?? initialTime ?? '13:30')
   const [priorityId, setPriorityId] = useState(
     event?.priority_tier_id ?? tiers[0]?.id ?? '',
   )

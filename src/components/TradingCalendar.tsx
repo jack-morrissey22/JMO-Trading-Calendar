@@ -1,43 +1,43 @@
+import { forwardRef } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import listPlugin from '@fullcalendar/list'
 import interactionPlugin from '@fullcalendar/interaction'
 import type { DateClickArg } from '@fullcalendar/interaction'
-import type { EventClickArg, EventInput } from '@fullcalendar/core'
+import type { DatesSetArg, EventClickArg, EventInput } from '@fullcalendar/core'
 
 type Props = {
+  initialView: string
+  initialDate: Date
   events: EventInput[]
   onDateClick: (dateStr: string) => void
   onEventClick: (id: string) => void
+  onDatesSet: (arg: DatesSetArg) => void
+  onNavLinkDay: (date: Date) => void
 }
 
-// Presentational calendar. Month / Week / Day all use the day-grid (list-per-day)
-// style rather than a time-grid: trading events are single points in time, not
-// duration blocks, so we list them vertically as "dot · time · title" and let a
-// busy day elongate instead of cramming concurrent events into columns.
-// Agenda is the chronological list view.
-export function TradingCalendar({ events, onDateClick, onEventClick }: Props) {
+// Month / Week / Agenda are handled by FullCalendar (day-grid + list). The Day
+// view is our custom elastic-hour DayView, so it's intentionally absent here.
+// The toolbar lives in App and drives this via a ref to the FullCalendar API.
+export const TradingCalendar = forwardRef<FullCalendar, Props>(function TradingCalendar(
+  { initialView, initialDate, events, onDateClick, onEventClick, onDatesSet, onNavLinkDay },
+  ref,
+) {
   return (
     <FullCalendar
+      ref={ref}
       plugins={[dayGridPlugin, listPlugin, interactionPlugin]}
-      initialView="dayGridMonth"
-      headerToolbar={{
-        left: 'prev,next today',
-        center: 'title',
-        right: 'dayGridMonth,dayGridWeek,dayGridDay,listMonth',
-      }}
-      buttonText={{
-        today: 'Today',
-        month: 'Month',
-        week: 'Week',
-        day: 'Day',
-        list: 'Agenda',
-      }}
+      initialView={initialView}
+      initialDate={initialDate}
+      headerToolbar={false}
       firstDay={1}
+      navLinks
+      navLinkDayClick={(date) => onNavLinkDay(date)}
       dayMaxEvents={false}
       height="auto"
       eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
       events={events}
+      datesSet={onDatesSet}
       dateClick={(arg: DateClickArg) => onDateClick(arg.dateStr.slice(0, 10))}
       eventClick={(arg: EventClickArg) => {
         arg.jsEvent.preventDefault()
@@ -45,4 +45,4 @@ export function TradingCalendar({ events, onDateClick, onEventClick }: Props) {
       }}
     />
   )
-}
+})

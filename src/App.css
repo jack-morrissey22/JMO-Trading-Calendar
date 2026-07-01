@@ -76,12 +76,125 @@
   flex: 1;
   min-height: 0;
   padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cal-scroll {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
 /* Keep quiet days a sensible size while busy days expand to fit every event. */
 .fc .fc-daygrid-day-frame {
   min-height: 92px;
+}
+
+/* ---- Calendar toolbar (app-owned, drives FullCalendar + custom DayView) ---- */
+.cal-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+.cal-nav {
+  display: flex;
+  gap: 6px;
+}
+.cal-views {
+  display: flex;
+  gap: 6px;
+}
+.cal-title {
+  flex: 1;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+.cal-btn {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 5px 11px;
+  font-size: 12.5px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.cal-btn:hover {
+  background: var(--hover);
+}
+.cal-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ---- Custom elastic-hour Day view ---- */
+.dayview {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.dayview-row {
+  display: flex;
+  min-height: 46px;
+  border-top: 1px solid var(--border);
+}
+.dayview-row:first-child {
+  border-top: none;
+}
+.dayview-hour {
+  cursor: pointer;
+}
+.dayview-hour:hover .dayview-hour-body {
+  background: var(--hover);
+}
+.dayview-allday {
+  background: var(--panel-2);
+}
+.dayview-hour-label {
+  width: 64px;
+  flex-shrink: 0;
+  padding: 7px 12px 0 0;
+  text-align: right;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.dayview-hour-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px 8px;
+  border-radius: 4px;
+}
+.dayview-event {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 11px;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+  font-size: 12.5px;
+  width: 100%;
+}
+.dayview-event-time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  opacity: 0.92;
+}
+.dayview-event-title {
+  font-weight: 500;
 }
 
 .app-footer {
