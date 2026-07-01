@@ -2,8 +2,8 @@ name: Email reminders
 
 on:
   schedule:
-    # Every 15 minutes. Also keeps the Supabase project awake.
-    - cron: '*/15 * * * *'
+    # Every 5 minutes (GitHub's minimum). Also keeps the Supabase project awake.
+    - cron: '*/5 * * * *'
   workflow_dispatch: {} # allow manual runs (for testing)
 
 jobs:
