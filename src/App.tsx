@@ -21,6 +21,7 @@ import {
   createSeries,
   deleteEvent,
   deletePriorityTier,
+  deleteSeriesAll,
   deleteSeriesFully,
   deleteSeriesTentatives,
   fetchEvents,
@@ -414,6 +415,13 @@ function App() {
     onSuccess: invalidateAll,
   })
 
+  // Delete an entire series: the template plus every occurrence (confirmed +
+  // tentative + skipped). Destructive — the modal confirms before calling this.
+  const deleteSeriesAllMut = useMutation({
+    mutationFn: (seriesId: string) => deleteSeriesAll(seriesId),
+    onSuccess: invalidateAll,
+  })
+
   // Extend on demand: materialise a series further than its rolling horizon,
   // up to a chosen date. Purely additive (never removes existing occurrences).
   const extendSeriesMut = useMutation({
@@ -686,6 +694,7 @@ function App() {
             skipMut.isPending ||
             updateSeriesMut.isPending ||
             deleteSeriesMut.isPending ||
+            deleteSeriesAllMut.isPending ||
             extendSeriesMut.isPending
           }
           onSave={(input, rem, sound, recurrence, id) =>
@@ -698,6 +707,7 @@ function App() {
           onUpdateSeries={(seriesId, rec, sound) => updateSeriesMut.mutate({ seriesId, rec, sound })}
           onExtendSeries={(seriesId, toDate) => extendSeriesMut.mutate({ seriesId, toDate })}
           onDeleteSeries={(seriesId) => deleteSeriesMut.mutate(seriesId)}
+          onDeleteSeriesAll={(seriesId) => deleteSeriesAllMut.mutate(seriesId)}
           onDelete={(id) => deleteMut.mutate(id)}
           onClose={() => setModal({ open: false })}
         />

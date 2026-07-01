@@ -74,6 +74,7 @@ export type EventModalProps = {
   onUpdateSeries?: (seriesId: string, recurrence: RecurrenceValue, sound: SoundChange) => void
   onExtendSeries?: (seriesId: string, toDate: string) => void
   onDeleteSeries?: (seriesId: string) => void
+  onDeleteSeriesAll?: (seriesId: string) => void
   onDelete: (id: string) => void
   onClose: () => void
 }
@@ -93,6 +94,7 @@ export function EventModal({
   onUpdateSeries,
   onExtendSeries,
   onDeleteSeries,
+  onDeleteSeriesAll,
   onDelete,
   onClose,
 }: EventModalProps) {
@@ -488,11 +490,28 @@ export function EventModal({
               </button>
               <button
                 type="button"
-                className="btn-danger"
+                className="btn-ghost"
                 disabled={busy}
+                title="Keep past and confirmed entries; just stop projecting new ones"
                 onClick={() => onDeleteSeries?.(series.id)}
               >
                 Stop repeating
+              </button>
+              <button
+                type="button"
+                className="btn-danger"
+                disabled={busy}
+                title="Remove the repeat and every occurrence, confirmed and tentative"
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      'Delete the entire series — every occurrence, including ones you have already confirmed? This cannot be undone.',
+                    )
+                  )
+                    onDeleteSeriesAll?.(series.id)
+                }}
+              >
+                Delete entire series
               </button>
             </div>
             <div className="recur-extend">

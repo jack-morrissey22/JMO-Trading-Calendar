@@ -328,6 +328,15 @@ export async function deleteSeriesFully(seriesId: string): Promise<void> {
   if (error) throw error
 }
 
+/** Delete an entire series: every occurrence (confirmed, tentative and skipped)
+ *  and the series row itself. Each event's reminders cascade with it. */
+export async function deleteSeriesAll(seriesId: string): Promise<void> {
+  const { error } = await supabase.from('events').delete().eq('series_id', seriesId)
+  if (error) throw error
+  const { error: sErr } = await supabase.from('series').delete().eq('id', seriesId)
+  if (sErr) throw sErr
+}
+
 const pad2 = (n: number) => String(n).padStart(2, '0')
 const ymd = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 
