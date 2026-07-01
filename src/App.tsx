@@ -4,6 +4,7 @@ import type { DatesSetArg, EventInput } from '@fullcalendar/core'
 import type FullCalendar from '@fullcalendar/react'
 import { TradingCalendar } from './components/TradingCalendar'
 import { DayView } from './components/DayView'
+import { WeekView } from './components/WeekView'
 import { EventModal } from './components/EventModal'
 import { Auth } from './components/Auth'
 import { useAuth } from './auth/AuthProvider'
@@ -21,17 +22,24 @@ import { useTheme } from './useTheme'
 import './App.css'
 
 type ViewKey = 'month' | 'week' | 'day' | 'agenda'
-const FC_VIEW: Record<Exclude<ViewKey, 'day'>, string> = {
+type FcViewKey = 'month' | 'agenda'
+const FC_VIEW: Record<FcViewKey, string> = {
   month: 'dayGridMonth',
-  week: 'dayGridWeek',
   agenda: 'listMonth',
 }
+const isFc = (v: ViewKey): v is FcViewKey => v === 'month' || v === 'agenda'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const fmtDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 const addDays = (d: Date, n: number) => {
   const r = new Date(d)
   r.setDate(r.getDate() + n)
+  return r
+}
+const startOfWeek = (d: Date) => {
+  const r = new Date(d)
+  r.setHours(0, 0, 0, 0)
+  r.setDate(r.getDate() - ((r.getDay() + 6) % 7)) // Monday-based
   return r
 }
 const dayTitle = (d: Date) =>
@@ -41,6 +49,13 @@ const dayTitle = (d: Date) =>
     month: 'long',
     year: 'numeric',
   })
+const weekTitle = (d: Date) => {
+  const ws = startOfWeek(d)
+  const we = addDays(ws, 6)
+  const s = ws.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+  const e = we.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+  return `${s} – ${e}`
+}
 
 type ModalState =
   | { open: false }
@@ -114,22 +129,17 @@ function App() {
 
   // ---- Toolbar handlers ----
   const selectView = (next: ViewKey) => {
-    if (next !== 'day' && view !== 'day') {
-      calRef.current?.getApi().changeView(FC_VIEW[next])
-    }
+    if (isFc(next) && isFc(view)) calRef.current?.getApi().changeView(FC_VIEW[next])
     setView(next)
   }
 
-  const goPrev = () => {
-    if (view === 'day') setFocusDate((d) => addDays(d, -1))
-    else calRef.current?.getApi().prev()
-  }
-  const goNext = () => {
-    if (view === 'day') setFocusDate((d) => addDays(d, 1))
-    else calRef.current?.getApi().next()
+  const shift = (dir: -1 | 1) => {
+    if (view === 'day') setFocusDate((d) => addDays(d, dir))
+    else if (view === 'week') setFocusDate((d) => addDays(d, dir * 7))
+    else calRef.current?.getApi()[dir === -1 ? 'prev' : 'next']()
   }
   const goToday = () => {
-    if (view === 'day') setFocusDate(new Date())
+    if (view === 'day' || view === 'week') setFocusDate(new Date())
     else calRef.current?.getApi().today()
   }
 
@@ -146,7 +156,10 @@ function App() {
     const ev = eventById(id)
     if (ev) setModal({ open: true, event: ev })
   }
-  const title = view === 'day' ? dayTitle(focusDate) : fcTitle
+  const openCreateAt = (date: Date, hour: number) =>
+    setModal({ open: true, initialDate: fmtDate(date), initialTime: `${pad(hour)}:00` })
+
+  const title = view === 'day' ? dayTitle(focusDate) : view === 'week' ? weekTitle(focusDate) : fcTitle
 
   return (
     <div className="app">
@@ -181,10 +194,10 @@ function App() {
       <main className="calendar-wrap">
         <div className="cal-toolbar">
           <div className="cal-nav">
-            <button className="cal-btn" onClick={goPrev} aria-label="Previous">
+            <button className="cal-btn" onClick={() => shift(-1)} aria-label="Previous">
               ‹
             </button>
-            <button className="cal-btn" onClick={goNext} aria-label="Next">
+            <button className="cal-btn" onClick={() => shift(1)} aria-label="Next">
               ›
             </button>
             <button className="cal-btn" onClick={goToday}>
@@ -212,13 +225,19 @@ function App() {
               events={events ?? []}
               colorOf={colorOf}
               onEventClick={openEdit}
-              onSlotClick={(hour) =>
-                setModal({
-                  open: true,
-                  initialDate: fmtDate(focusDate),
-                  initialTime: `${pad(hour)}:00`,
-                })
-              }
+              onSlotClick={(hour) => openCreateAt(focusDate, hour)}
+            />
+          ) : view === 'week' ? (
+            <WeekView
+              weekStart={startOfWeek(focusDate)}
+              events={events ?? []}
+              colorOf={colorOf}
+              onEventClick={openEdit}
+              onSlotClick={openCreateAt}
+              onDayHeaderClick={(date) => {
+                setFocusDate(date)
+                setView('day')
+              }}
             />
           ) : (
             <TradingCalendar

@@ -188,13 +188,75 @@
   font-size: 12.5px;
   width: 100%;
 }
+.dayview-event {
+  min-width: 0;
+}
 .dayview-event-time {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   opacity: 0.92;
+  flex-shrink: 0;
 }
 .dayview-event-title {
   font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Custom Week view (7 elastic-hour columns sharing one hour rail) ---- */
+.weekview {
+  display: grid;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.weekview-corner {
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
+}
+.weekview-dayhead {
+  padding: 8px 6px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  cursor: pointer;
+}
+.weekview-dayhead:hover {
+  color: var(--text);
+}
+.weekview-dayhead.today {
+  color: var(--accent);
+}
+.weekview-hour-label {
+  padding: 6px 8px 0 0;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  border-top: 1px solid var(--border);
+}
+.weekview-cell {
+  min-height: 40px;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  cursor: pointer;
+}
+.weekview-cell:hover {
+  background: var(--hover);
+}
+.weekview-allday-label,
+.weekview-allday-cell {
+  background: var(--panel-2);
 }
 
 .app-footer {
