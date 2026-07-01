@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { EventRow, ReminderRow } from '../lib/api'
 import { reminderFireTime } from '../lib/reminders'
+import { playChime, primeSound } from '../lib/sound'
 
 const STORAGE_KEY = 'jmo-shown-reminders'
 const GRACE_MS = 8 * 60 * 60 * 1000 // only surface reminders that fired within 8h
@@ -43,6 +44,13 @@ export function ReminderToaster({
   const [toasts, setToasts] = useState<Toast[]>([])
   const shownRef = useRef<Set<string>>(loadShown())
 
+  // Unlock audio on the first user interaction (browser autoplay policy).
+  useEffect(() => {
+    const onGesture = () => primeSound()
+    window.addEventListener('pointerdown', onGesture, { once: true })
+    return () => window.removeEventListener('pointerdown', onGesture)
+  }, [])
+
   useEffect(() => {
     const check = () => {
       const now = Date.now()
@@ -61,6 +69,7 @@ export function ReminderToaster({
       if (fresh.length) {
         setToasts((t) => [...t, ...fresh])
         saveShown(shownRef.current)
+        playChime()
       }
     }
     check()

@@ -8,7 +8,7 @@ export function fixed(daysBefore: number, atTime: string): ReminderDraft {
 }
 
 export const PRESETS: { label: string; make: () => ReminderDraft }[] = [
-  { label: 'At start', make: () => relative(0) },
+  { label: '5 minutes before', make: () => relative(5) },
   { label: '15 minutes before', make: () => relative(15) },
   { label: '30 minutes before', make: () => relative(30) },
   { label: '1 hour before', make: () => relative(60) },

@@ -69,7 +69,7 @@ export function EventModal({
   const removeReminder = (i: number) => setReminders((rs) => rs.filter((_, j) => j !== i))
   const addCustom = () => {
     const n = parseInt(customVal, 10)
-    if (!Number.isFinite(n) || n < 0) return
+    if (!Number.isFinite(n) || n < 1) return
     addReminder(relative(n * CUSTOM_UNITS[customUnit].mult))
   }
 
@@ -222,7 +222,7 @@ export function EventModal({
             <span>Custom:</span>
             <input
               type="number"
-              min={0}
+              min={1}
               value={customVal}
               onChange={(e) => setCustomVal(e.target.value)}
             />
