@@ -20,7 +20,7 @@ function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
     customMonths: [seed.getMonth() + 1],
     yearlyMonth: seed.getMonth() + 1,
     dayType: 'nth_weekday' as DayRule['type'],
-    nth: 1,
+    nth: Math.ceil(seed.getDate() / 7), // which occurrence in the month the seed is (1st/2nd/…)
     weekday: seed.getDay(),
     dayOfMonth: seed.getDate(),
     roll: 'next' as 'next' | 'prev' | 'none',
@@ -140,6 +140,23 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
   const [offsetDays, setOffsetDays] = useState(D.offsetDays)
   const [weeklyDays, setWeeklyDays] = useState<number[]>(D.weeklyDays)
   const [horizonMonths, setHorizonMonths] = useState(D.horizonMonths)
+
+  // Create mode: keep the date-derived guesses in sync as the user picks or
+  // changes the event date — but only until they engage the recurrence UI.
+  // deriveInit ran once at mount off the modal-open date; without this, changing
+  // the date afterwards leaves a stale guess (e.g. "1st Wednesday" for a Monday).
+  // Once Repeats is ticked the user owns the fields, so we stop resyncing.
+  useEffect(() => {
+    if (initial || repeats) return
+    const s = seedDate ? new Date(`${seedDate}T00:00:00`) : new Date()
+    setWeekday(s.getDay())
+    setNth(Math.ceil(s.getDate() / 7))
+    setDayOfMonth(s.getDate())
+    setWeeklyDays([s.getDay()])
+    setCustomMonths([s.getMonth() + 1])
+    setYearlyMonth(s.getMonth() + 1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seedDate])
 
   const rule = useMemo<RecurrenceRule | null>(() => {
     if (!repeats) return null
