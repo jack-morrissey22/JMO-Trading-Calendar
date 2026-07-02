@@ -1,12 +1,12 @@
 name: Reminders (email + push)
 
 on:
-  schedule:
-    # Every 5 minutes, offset by 1 (fires at :01, :06, :11 … :31 …). The offset
-    # catches on-the-hour and half-hour reminders ~1 min after they're due and
-    # dodges the top-of-hour congestion. Also keeps the Supabase project awake.
-    - cron: '1-59/5 * * * *'
-  workflow_dispatch: {} # allow manual runs (for testing)
+  # The primary reminder scheduler is now a Cloudflare Worker Cron Trigger (runs
+  # every minute — punctual, unlike GitHub's scheduled runners which lagged
+  # 15-30 min under load). This workflow is kept as a manual backup only: run it
+  # from the Actions tab if the Cloudflare cron is ever down. The `sent_at` stamp
+  # makes it safe to run alongside the Worker without double-sending.
+  workflow_dispatch: {}
 
 jobs:
   send:
