@@ -44,14 +44,17 @@ const sb = (path, init = {}) =>
   })
 
 const now = Date.now()
-const nowIso = new Date(now).toISOString()
+// 3s lookahead: also catch reminders due within the next few seconds so a
+// boundary reminder is never missed by a hair of clock skew (worst case it
+// fires 2-3s early instead of ~1 min late). Matches the Cloudflare worker.
+const dueIso = new Date(now + 3000).toISOString()
 // Don't fire reminders that came due long ago (e.g. while setup was pending).
 const floorIso = new Date(now - 12 * 60 * 60 * 1000).toISOString()
 
 const query =
   `/rest/v1/reminders?select=id,user_id,fire_at,email,push,events(title,starts_at,all_day)` +
   `&or=(email.eq.true,push.eq.true)&sent_at=is.null` +
-  `&fire_at=lte.${encodeURIComponent(nowIso)}&fire_at=gte.${encodeURIComponent(floorIso)}`
+  `&fire_at=lte.${encodeURIComponent(dueIso)}&fire_at=gte.${encodeURIComponent(floorIso)}`
 
 const due = await sb(query).then((r) => r.json())
 if (!Array.isArray(due)) {
