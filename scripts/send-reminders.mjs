@@ -122,6 +122,10 @@ for (const r of due) {
           await webpush.sendNotification(
             { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
             payload,
+            // High urgency so iOS/Android deliver promptly instead of batching to
+            // save battery; TTL 1h so a late-created push still lands but a very
+            // stale reminder doesn't surface hours later.
+            { urgency: 'high', TTL: 3600 },
           )
           delivered = true
           console.log(`Pushed to device ${s.id}: ${title}`)
