@@ -805,6 +805,30 @@
 .modal.inbox {
   max-width: 520px;
 }
+.inbox-filter {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 2px;
+}
+.inbox-search {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--text);
+}
+.inbox-filter select {
+  max-width: 45%;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  color: var(--text);
+}
 .inbox-list {
   display: flex;
   flex-direction: column;

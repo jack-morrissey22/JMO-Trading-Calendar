@@ -742,7 +742,7 @@ function App() {
             setShowInbox(false)
             openEdit(id)
           }}
-          onConfirmAll={() => confirmAllMut.mutate(tentativeEvents.map((e) => e.id))}
+          onConfirmAll={(ids) => confirmAllMut.mutate(ids)}
           onClose={() => setShowInbox(false)}
         />
       )}
