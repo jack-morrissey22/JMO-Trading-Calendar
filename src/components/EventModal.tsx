@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { fetchEventSound } from '../lib/api'
 import type { EventInputData, EventRow, ReminderDraft, SeriesRow } from '../lib/api'
@@ -53,6 +53,8 @@ export type EventModalProps = {
   /** The series this event belongs to (for editing the repeat). */
   series?: SeriesRow
   templates?: EventTemplate[]
+  /** Categories already used across the user's events, for the datalist suggestions. */
+  categoryOptions?: string[]
   initialDate?: string
   initialTime?: string
   initialReminders?: ReminderDraft[]
@@ -85,6 +87,7 @@ export function EventModal({
   event,
   series,
   templates,
+  categoryOptions,
   initialDate,
   initialTime,
   initialReminders,
@@ -115,6 +118,11 @@ export function EventModal({
     event?.priority_tier_id ?? tiers[0]?.id ?? '',
   )
   const [category, setCategory] = useState<string>(event?.category ?? 'Macro/Economic')
+  // Preset categories plus any the user has already created, for the datalist.
+  const categoryChoices = useMemo(
+    () => [...new Set([...CATEGORIES, ...(categoryOptions ?? [])])].sort((a, b) => a.localeCompare(b)),
+    [categoryOptions],
+  )
   const [tags, setTags] = useState((event?.tags ?? []).join(', '))
   const [notes, setNotes] = useState(event?.notes ?? '')
 
@@ -347,13 +355,17 @@ export function EventModal({
           </label>
           <label className="field">
             Category
-            <select value={category} onChange={(e) => setCategory(e.target.value)}>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
+            <input
+              list="event-category-options"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Type or pick a category"
+            />
+            <datalist id="event-category-options">
+              {categoryChoices.map((c) => (
+                <option key={c} value={c} />
               ))}
-            </select>
+            </datalist>
           </label>
         </div>
 

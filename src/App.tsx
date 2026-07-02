@@ -179,6 +179,12 @@ function App() {
       .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
   }, [visibleEvents])
 
+  // Distinct categories the user has already used, for the modal's datalist.
+  const categoryOptions = useMemo(
+    () => [...new Set((events ?? []).map((e) => e.category).filter(Boolean))].sort(),
+    [events],
+  )
+
   // Once per session, top up each series so at least the horizon stays populated
   // as dates pass. Never projects before a series' own start date.
   useEffect(() => {
@@ -688,6 +694,7 @@ function App() {
               : undefined
           }
           templates={templates}
+          categoryOptions={categoryOptions}
           initialDate={modal.initialDate}
           initialTime={modal.initialTime}
           initialReminders={

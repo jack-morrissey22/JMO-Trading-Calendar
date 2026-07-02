@@ -35,21 +35,29 @@ export function SuggestionsInbox({
 }: Props) {
   const [query, setQuery] = useState('')
   const [name, setName] = useState('')
+  const [category, setCategory] = useState('')
 
-  // Distinct event names present in the inbox, for the quick-pick dropdown.
+  // Distinct event names / categories present in the inbox, for the quick-picks.
   const names = useMemo(
     () => [...new Set(events.map((e) => e.title))].sort((a, b) => a.localeCompare(b)),
+    [events],
+  )
+  const categories = useMemo(
+    () => [...new Set(events.map((e) => e.category).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
     [events],
   )
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     return events.filter(
-      (e) => (!q || e.title.toLowerCase().includes(q)) && (!name || e.title === name),
+      (e) =>
+        (!q || e.title.toLowerCase().includes(q)) &&
+        (!name || e.title === name) &&
+        (!category || e.category === category),
     )
-  }, [events, query, name])
+  }, [events, query, name, category])
 
-  const filtering = query.trim() !== '' || name !== ''
+  const filtering = query.trim() !== '' || name !== '' || category !== ''
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -63,7 +71,7 @@ export function SuggestionsInbox({
           <div className="inbox-empty">Nothing to review — you're all caught up.</div>
         ) : (
           <>
-            <div className="inbox-filter">
+            <div className="inbox-filters">
               <input
                 className="inbox-search"
                 type="search"
@@ -71,15 +79,29 @@ export function SuggestionsInbox({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
-              {names.length > 1 && (
-                <select value={name} onChange={(e) => setName(e.target.value)}>
-                  <option value="">All events ({names.length})</option>
-                  {names.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
+              {(names.length > 1 || categories.length > 1) && (
+                <div className="inbox-filter-selects">
+                  {names.length > 1 && (
+                    <select value={name} onChange={(e) => setName(e.target.value)}>
+                      <option value="">All events ({names.length})</option>
+                      {names.map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {categories.length > 1 && (
+                    <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                      <option value="">All categories ({categories.length})</option>
+                      {categories.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               )}
             </div>
 
