@@ -299,8 +299,10 @@ function App() {
       if (sound !== undefined) await setEventSound(eventId, sound.data, sound.name)
       if (confirmAfter) await setEventStatus(eventId, 'confirmed')
 
-      // New recurring event → create the series and project future occurrences.
-      if (!id && recurrence) {
+      // A recurrence arrives either from a brand-new recurring event or from
+      // turning an existing one-off into a series. Either way this event becomes
+      // the confirmed seed; create the series and project future occurrences.
+      if (recurrence) {
         const start = new Date(input.starts_at)
         const time_of_day = input.all_day
           ? null

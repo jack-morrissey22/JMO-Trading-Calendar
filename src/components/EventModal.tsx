@@ -240,7 +240,11 @@ export function EventModal({
     e.preventDefault()
     const p = buildPayload()
     if (!p) return
-    onSave(p.input, reminders, p.sound, editing ? null : recurrence, event?.id)
+    // Recurrence flows through Save for a NEW event or when turning an existing
+    // one-off into a series. Series events manage their pattern via onUpdateSeries,
+    // so we never re-send recurrence for them here.
+    const recForSave = series ? null : recurrence
+    onSave(p.input, reminders, p.sound, recForSave, event?.id)
   }
 
   function doConfirm() {
@@ -466,6 +470,14 @@ export function EventModal({
 
         {!editing ? (
           <RecurrenceEditor seedDate={date} onChange={setRecurrence} />
+        ) : !series && !tentative ? (
+          <div className="recur-manage">
+            <div className="modal-hint">
+              🔁 This event doesn't repeat yet — tick Repeats to turn it into a recurring
+              series (this entry stays as the first occurrence).
+            </div>
+            <RecurrenceEditor seedDate={date} onChange={setRecurrence} />
+          </div>
         ) : series && !tentative ? (
           <div className="recur-manage">
             {series.active ? (
