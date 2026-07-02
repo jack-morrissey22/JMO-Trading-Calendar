@@ -22,7 +22,6 @@ import {
   deleteEvent,
   deletePriorityTier,
   deleteSeriesAll,
-  deleteSeriesFully,
   deleteSeriesTentatives,
   fetchEvents,
   fetchPriorityTiers,
@@ -35,6 +34,7 @@ import {
   setEventStatus,
   setSeriesEventsSound,
   skipEvent,
+  stopSeries,
   updateEvent,
   updatePriorityTier,
   updateSeries,
@@ -410,8 +410,22 @@ function App() {
     onSuccess: invalidateAll,
   })
 
-  const deleteSeriesMut = useMutation({
-    mutationFn: (seriesId: string) => deleteSeriesFully(seriesId),
+  // Stop repeating: keep the occurrences grouped (still deletable/resumable as a
+  // series), just halt new projections.
+  const stopSeriesMut = useMutation({
+    mutationFn: (seriesId: string) => stopSeries(seriesId),
+    onSuccess: invalidateAll,
+  })
+
+  // Resume a stopped series: reactivate and re-project up to the horizon.
+  const resumeSeriesMut = useMutation({
+    mutationFn: async (seriesId: string) => {
+      const s = await updateSeries(seriesId, { active: true })
+      const own = (events ?? []).filter((e) => e.series_id === seriesId)
+      const existing = new Set(own.map((e) => fmtDate(new Date(e.starts_at))))
+      const { from, to } = boundsFor(own, s.rule, s.horizon_months)
+      await projectSeries(s, existing, from, to)
+    },
     onSuccess: invalidateAll,
   })
 
@@ -693,7 +707,8 @@ function App() {
             deleteMut.isPending ||
             skipMut.isPending ||
             updateSeriesMut.isPending ||
-            deleteSeriesMut.isPending ||
+            stopSeriesMut.isPending ||
+            resumeSeriesMut.isPending ||
             deleteSeriesAllMut.isPending ||
             extendSeriesMut.isPending
           }
@@ -706,7 +721,8 @@ function App() {
           onSkip={(id) => skipMut.mutate(id)}
           onUpdateSeries={(seriesId, rec, sound) => updateSeriesMut.mutate({ seriesId, rec, sound })}
           onExtendSeries={(seriesId, toDate) => extendSeriesMut.mutate({ seriesId, toDate })}
-          onDeleteSeries={(seriesId) => deleteSeriesMut.mutate(seriesId)}
+          onStopSeries={(seriesId) => stopSeriesMut.mutate(seriesId)}
+          onResumeSeries={(seriesId) => resumeSeriesMut.mutate(seriesId)}
           onDeleteSeriesAll={(seriesId) => deleteSeriesAllMut.mutate(seriesId)}
           onDelete={(id) => deleteMut.mutate(id)}
           onClose={() => setModal({ open: false })}

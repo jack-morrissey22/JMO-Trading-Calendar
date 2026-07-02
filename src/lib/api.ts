@@ -320,11 +320,12 @@ export async function deleteSeriesTentatives(seriesId: string): Promise<void> {
   if (error) throw error
 }
 
-/** Stop a repeat: remove its tentative future occurrences and the series row.
- *  Confirmed occurrences are kept (their series_id becomes null). */
-export async function deleteSeriesFully(seriesId: string): Promise<void> {
+/** Stop a repeat WITHOUT stranding its history: drop the future tentatives and
+ *  mark the series inactive (top-up skips inactive series). Confirmed occurrences
+ *  stay linked to the series, so it can still be resumed or deleted as a group. */
+export async function stopSeries(seriesId: string): Promise<void> {
   await deleteSeriesTentatives(seriesId)
-  const { error } = await supabase.from('series').delete().eq('id', seriesId)
+  const { error } = await supabase.from('series').update({ active: false }).eq('id', seriesId)
   if (error) throw error
 }
 

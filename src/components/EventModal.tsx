@@ -73,7 +73,8 @@ export type EventModalProps = {
   onSkip?: (id: string) => void
   onUpdateSeries?: (seriesId: string, recurrence: RecurrenceValue, sound: SoundChange) => void
   onExtendSeries?: (seriesId: string, toDate: string) => void
-  onDeleteSeries?: (seriesId: string) => void
+  onStopSeries?: (seriesId: string) => void
+  onResumeSeries?: (seriesId: string) => void
   onDeleteSeriesAll?: (seriesId: string) => void
   onDelete: (id: string) => void
   onClose: () => void
@@ -93,7 +94,8 @@ export function EventModal({
   onSkip,
   onUpdateSeries,
   onExtendSeries,
-  onDeleteSeries,
+  onStopSeries,
+  onResumeSeries,
   onDeleteSeriesAll,
   onDelete,
   onClose,
@@ -466,70 +468,108 @@ export function EventModal({
           <RecurrenceEditor seedDate={date} onChange={setRecurrence} />
         ) : series && !tentative ? (
           <div className="recur-manage">
-            <div className="modal-hint">🔁 This event repeats — editing the pattern updates the whole series.</div>
-            <RecurrenceEditor
-              seedDate={date}
-              initial={{ rule: series.rule, horizonMonths: series.horizon_months }}
-              onChange={setRecurrence}
-            />
-            <div className="recur-actions">
-              <button
-                type="button"
-                className="btn-ghost"
-                disabled={busy}
-                onClick={() =>
-                  recurrence &&
-                  onUpdateSeries?.(
-                    series.id,
-                    recurrence,
-                    soundChanged ? { data: soundData, name: soundName } : undefined,
-                  )
-                }
-              >
-                Update repeat & re-project
-              </button>
-              <button
-                type="button"
-                className="btn-ghost"
-                disabled={busy}
-                title="Keep past and confirmed entries; just stop projecting new ones"
-                onClick={() => onDeleteSeries?.(series.id)}
-              >
-                Stop repeating
-              </button>
-              <button
-                type="button"
-                className="btn-danger"
-                disabled={busy}
-                title="Remove the repeat and every occurrence, confirmed and tentative"
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      'Delete the entire series — every occurrence, including ones you have already confirmed? This cannot be undone.',
-                    )
-                  )
-                    onDeleteSeriesAll?.(series.id)
-                }}
-              >
-                Delete entire series
-              </button>
-            </div>
-            <div className="recur-extend">
-              <span>Or project further — out to</span>
-              <input
-                type="date"
-                value={extendDate}
-                onChange={(e) => setExtendDate(e.target.value)}
-              />
-              <button
-                type="button"
-                className="btn-ghost"
-                disabled={busy}
-                onClick={() => onExtendSeries?.(series.id, extendDate)}
-              >
-                Extend
-              </button>
-            </div>
+            {series.active ? (
+              <>
+                <div className="modal-hint">🔁 This event repeats — editing the pattern updates the whole series.</div>
+                <RecurrenceEditor
+                  seedDate={date}
+                  initial={{ rule: series.rule, horizonMonths: series.horizon_months }}
+                  onChange={setRecurrence}
+                />
+                <div className="recur-actions">
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    disabled={busy}
+                    onClick={() =>
+                      recurrence &&
+                      onUpdateSeries?.(
+                        series.id,
+                        recurrence,
+                        soundChanged ? { data: soundData, name: soundName } : undefined,
+                      )
+                    }
+                  >
+                    Update repeat & re-project
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    disabled={busy}
+                    title="Keep these occurrences grouped; just stop adding new ones"
+                    onClick={() => onStopSeries?.(series.id)}
+                  >
+                    Stop repeating
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    disabled={busy}
+                    title="Remove the repeat and every occurrence, confirmed and tentative"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          'Delete the entire series — every occurrence, including ones you have already confirmed? This cannot be undone.',
+                        )
+                      )
+                        onDeleteSeriesAll?.(series.id)
+                    }}
+                  >
+                    Delete entire series
+                  </button>
+                </div>
+                <div className="recur-extend">
+                  <span>Or project further — out to</span>
+                  <input
+                    type="date"
+                    value={extendDate}
+                    onChange={(e) => setExtendDate(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    disabled={busy}
+                    onClick={() => onExtendSeries?.(series.id, extendDate)}
+                  >
+                    Extend
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="modal-hint">
+                  ⏸ Repeating is stopped — no new occurrences are being added, but these
+                  entries are still grouped. Resume it, or delete them all at once.
+                </div>
+                <div className="recur-actions">
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    disabled={busy}
+                    title="Start projecting future occurrences again"
+                    onClick={() => onResumeSeries?.(series.id)}
+                  >
+                    Resume repeating
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    disabled={busy}
+                    title="Remove every occurrence of this series, confirmed and tentative"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          'Delete the entire series — every occurrence, including ones you have already confirmed? This cannot be undone.',
+                        )
+                      )
+                        onDeleteSeriesAll?.(series.id)
+                    }}
+                  >
+                    Delete entire series
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         ) : null}
 
