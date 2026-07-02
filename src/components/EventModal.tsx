@@ -212,6 +212,8 @@ export function EventModal({
   const removeReminder = (i: number) => setReminders((rs) => rs.filter((_, j) => j !== i))
   const toggleEmail = (i: number) =>
     setReminders((rs) => rs.map((r, j) => (j === i ? { ...r, email: !r.email } : r)))
+  const togglePush = (i: number) =>
+    setReminders((rs) => rs.map((r, j) => (j === i ? { ...r, push: !r.push } : r)))
   const addCustom = () => {
     const n = parseInt(customVal, 10)
     if (!Number.isFinite(n) || n < 1) return
@@ -388,15 +390,26 @@ export function EventModal({
           {reminders.length > 0 && (
             <div className="reminder-chips">
               {reminders.map((r, i) => (
-                <span className={`reminder-chip${r.email ? ' has-email' : ''}`} key={i}>
+                <span
+                  className={`reminder-chip${r.email ? ' has-email' : ''}${r.push ? ' has-push' : ''}`}
+                  key={i}
+                >
                   {labelReminder(r)}
                   <button
                     type="button"
                     className={`reminder-email${r.email ? ' on' : ''}`}
                     onClick={() => toggleEmail(i)}
-                    title={r.email ? 'Emailing you — click for in-app only' : 'Also email me'}
+                    title={r.email ? 'Emailing you — click to stop' : 'Also email me'}
                   >
                     📧
+                  </button>
+                  <button
+                    type="button"
+                    className={`reminder-push${r.push ? ' on' : ''}`}
+                    onClick={() => togglePush(i)}
+                    title={r.push ? 'Pushing to your devices — click to stop' : 'Also push to my phone/devices'}
+                  >
+                    📱
                   </button>
                   <button
                     type="button"
@@ -475,8 +488,8 @@ export function EventModal({
           </div>
           {soundError && <div className="auth-error">{soundError}</div>}
           <p className="modal-hint">
-            Reminders pop up in-app; tap 📧 on one to also email it to you (even when the app
-            is closed). A custom clip plays instead of the spoken name.
+            Reminders pop up in-app; tap 📧 to also email it or 📱 to push it to your devices
+            (both reach you when the app is closed). A custom clip plays instead of the spoken name.
           </p>
         </div>
 

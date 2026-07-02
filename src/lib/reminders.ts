@@ -8,6 +8,7 @@ export function relative(minutes: number): ReminderDraft {
     at_time: null,
     channel: 'inapp',
     email: false,
+    push: false,
   }
 }
 export function fixed(daysBefore: number, atTime: string): ReminderDraft {
@@ -18,6 +19,7 @@ export function fixed(daysBefore: number, atTime: string): ReminderDraft {
     at_time: atTime,
     channel: 'inapp',
     email: false,
+    push: false,
   }
 }
 

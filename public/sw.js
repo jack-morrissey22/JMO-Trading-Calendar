@@ -3,7 +3,7 @@
 // this deliberately stays simple — navigations are network-first (always try
 // for the freshest app), and same-origin assets are cache-first so an installed
 // app still opens quickly / briefly offline. Bump CACHE to force a refresh.
-const CACHE = 'jmo-shell-v1'
+const CACHE = 'jmo-shell-v2'
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/favicon.svg', '/icon-192.png']
 
 self.addEventListener('install', (event) => {
@@ -49,4 +49,39 @@ self.addEventListener('fetch', (event) => {
       ),
     )
   }
+})
+
+// A reminder push arrived (sent by the reminder cron). Show a notification even
+// when the app is closed. Payload: { title, body, tag, url }.
+self.addEventListener('push', (event) => {
+  let data = {}
+  try {
+    data = event.data ? event.data.json() : {}
+  } catch {
+    data = { title: 'JMO Calendar', body: event.data ? event.data.text() : '' }
+  }
+  const title = data.title || 'JMO Trading Calendar'
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || '',
+      tag: data.tag || undefined,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      data: { url: data.url || '/' },
+    }),
+  )
+})
+
+// Tapping the notification focuses an existing window or opens the app.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const target = (event.notification.data && event.notification.data.url) || '/'
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const c of clients) {
+        if ('focus' in c) return c.focus()
+      }
+      return self.clients.openWindow(target)
+    }),
+  )
 })

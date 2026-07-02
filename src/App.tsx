@@ -10,6 +10,7 @@ import { EventModal } from './components/EventModal'
 import type { EventTemplate } from './components/EventModal'
 import { PriorityManager } from './components/PriorityManager'
 import type { TierDraft } from './components/PriorityManager'
+import { PushSettings } from './components/PushSettings'
 import { ReminderToaster } from './components/ReminderToaster'
 import { SuggestionsInbox } from './components/SuggestionsInbox'
 import { Auth } from './components/Auth'
@@ -136,6 +137,7 @@ function App() {
   const [showPriorities, setShowPriorities] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showInbox, setShowInbox] = useState(false)
+  const [showPush, setShowPush] = useState(false)
   const toppedUp = useRef(false)
 
   const { data: tiers } = useQuery({
@@ -259,6 +261,7 @@ function App() {
         at_time: r.at_time,
         channel: r.channel,
         email: r.email,
+        push: r.push,
       })
       remByEvent.set(r.event_id, list)
     }
@@ -578,6 +581,9 @@ function App() {
           >
             ⚙ Priorities
           </button>
+          <button className="header-btn" onClick={() => setShowPush(true)}>
+            🔔 Notifications
+          </button>
           <div className="export-wrap">
             <button
               className="header-btn"
@@ -701,13 +707,14 @@ function App() {
             modal.event
               ? (reminders ?? [])
                   .filter((r) => r.event_id === modal.event!.id)
-                  .map(({ kind, minutes_before, days_before, at_time, channel, email }) => ({
+                  .map(({ kind, minutes_before, days_before, at_time, channel, email, push }) => ({
                     kind,
                     minutes_before,
                     days_before,
                     at_time,
                     channel,
                     email,
+                    push,
                   }))
               : []
           }
@@ -770,6 +777,8 @@ function App() {
           onClose={() => setShowPriorities(false)}
         />
       )}
+
+      {showPush && <PushSettings onClose={() => setShowPush(false)} />}
     </div>
   )
 }

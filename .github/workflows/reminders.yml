@@ -1,4 +1,4 @@
-name: Email reminders
+name: Reminders (email + push)
 
 on:
   schedule:
@@ -17,6 +17,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      # web-push is only needed by the sender (Web Push encryption + VAPID).
+      - run: npm install web-push@^3 --no-save --no-audit --no-fund
       - run: node scripts/send-reminders.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -24,3 +26,6 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           REMINDER_FROM: ${{ secrets.REMINDER_FROM }}
           REMINDER_TZ: ${{ secrets.REMINDER_TZ }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}

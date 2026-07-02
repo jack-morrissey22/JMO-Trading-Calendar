@@ -200,6 +200,8 @@ export type ReminderDraft = {
   channel: string
   /** Also send this reminder by email (delivered even when the app is closed). */
   email: boolean
+  /** Also push this reminder to the user's notification-enabled devices. */
+  push: boolean
 }
 
 export type ReminderRow = ReminderDraft & { id: string; event_id: string }
@@ -207,7 +209,7 @@ export type ReminderRow = ReminderDraft & { id: string; event_id: string }
 export async function fetchReminders(): Promise<ReminderRow[]> {
   const { data, error } = await supabase
     .from('reminders')
-    .select('id, event_id, kind, minutes_before, days_before, at_time, channel, email')
+    .select('id, event_id, kind, minutes_before, days_before, at_time, channel, email, push')
   if (error) throw error
   return (data ?? []) as ReminderRow[]
 }
@@ -232,12 +234,55 @@ export async function setEventReminders(
     days_before: d.days_before,
     at_time: d.at_time,
     email: d.email,
+    push: d.push,
     fire_at: reminderFireTime(d, { starts_at: startsAt } as EventRow).toISOString(),
     sent_at: null,
     channel: d.channel,
   }))
   const ins = await supabase.from('reminders').insert(rows)
   if (ins.error) throw ins.error
+}
+
+// ---------------------------------------------------------------------------
+// Push subscriptions (one row per notification-enabled device)
+// ---------------------------------------------------------------------------
+
+export type PushSubscriptionRow = {
+  id: string
+  endpoint: string
+  ua: string | null
+  created_at: string
+}
+
+/** Upsert this device's push subscription (keyed by endpoint). */
+export async function savePushSubscription(
+  sub: { endpoint: string; keys: { p256dh: string; auth: string } },
+  ua: string,
+): Promise<void> {
+  const { data: userRes } = await supabase.auth.getUser()
+  const user_id = userRes.user?.id
+  const { error } = await supabase
+    .from('push_subscriptions')
+    .upsert(
+      { user_id, endpoint: sub.endpoint, p256dh: sub.keys.p256dh, auth: sub.keys.auth, ua },
+      { onConflict: 'endpoint' },
+    )
+  if (error) throw error
+}
+
+export async function deletePushSubscription(endpoint: string): Promise<void> {
+  const { error } = await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint)
+  if (error) throw error
+}
+
+/** This user's registered devices (for showing/managing them). */
+export async function fetchPushSubscriptions(): Promise<PushSubscriptionRow[]> {
+  const { data, error } = await supabase
+    .from('push_subscriptions')
+    .select('id, endpoint, ua, created_at')
+    .order('created_at')
+  if (error) throw error
+  return (data ?? []) as PushSubscriptionRow[]
 }
 
 // ---------------------------------------------------------------------------

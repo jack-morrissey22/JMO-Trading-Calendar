@@ -615,7 +615,8 @@
   cursor: pointer;
   line-height: 1;
 }
-.reminder-email {
+.reminder-email,
+.reminder-push {
   background: rgba(255, 255, 255, 0.18);
   border: none;
   border-radius: 10px;
@@ -626,10 +627,56 @@
   opacity: 0.45;
   filter: grayscale(1);
 }
-.reminder-email.on {
+.reminder-email.on,
+.reminder-push.on {
   opacity: 1;
   filter: none;
   background: rgba(255, 255, 255, 0.35);
+}
+
+/* ---- Notifications (push) settings ---- */
+.modal.push-modal {
+  max-width: 460px;
+}
+.push-status {
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 4px 0;
+}
+.push-status.on {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.push-actions {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0;
+}
+.push-devices {
+  margin-top: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.push-devices-title {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.push-device {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+  padding: 3px 0;
+}
+.push-device-x {
+  padding: 2px 8px;
+  font-size: 11px;
 }
 .reminder-add select,
 .reminder-custom input,
