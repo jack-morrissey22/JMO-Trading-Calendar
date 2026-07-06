@@ -125,7 +125,8 @@ export function EventModal({
   const [priorityId, setPriorityId] = useState(
     event?.priority_tier_id ?? tiers[0]?.id ?? '',
   )
-  const [category, setCategory] = useState<string>(event?.category ?? 'Macro/Economic')
+  // New events start with no category (set it as you go, or leave blank).
+  const [category, setCategory] = useState<string>(event?.category ?? '')
   // Preset categories plus any the user has already created, for the datalist.
   const categoryChoices = useMemo(
     () => [...new Set([...CATEGORIES, ...(categoryOptions ?? [])])].sort((a, b) => a.localeCompare(b)),
