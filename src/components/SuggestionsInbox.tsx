@@ -15,7 +15,12 @@ type Props = {
 const pad = (n: number) => String(n).padStart(2, '0')
 function whenLabel(e: EventRow) {
   const d = new Date(e.starts_at)
-  const day = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
+  const day = d.toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
   return e.all_day ? `${day} · all day` : `${day} · ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
