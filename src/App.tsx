@@ -77,9 +77,12 @@ const dayStart = (iso: string) => {
   return d
 }
 
-// Projection window for a series: keep `horizon` months of occurrences ahead of
-// the LAST CONFIRMED one (or today) — so confirming the latest pulls in the next
-// batch. `from` never precedes the series' own start.
+// Projection window for a series. Monthly/weekly use a ROLLING WINDOW from today:
+// keep occurrences up to `horizon` months ahead of NOW — so confirming everything
+// doesn't shove the frontier out by another full horizon; one new occurrence just
+// rolls in as time passes ("Extend … out to" projects further on demand). Interval
+// series instead keep N occurrences ahead of the frontier (their whole purpose).
+// `from` never precedes the series' own start.
 function boundsFor(
   own: EventRow[],
   rule: RecurrenceRule,
@@ -104,7 +107,7 @@ function boundsFor(
     const ahead = Math.max(1, horizonMonths)
     return { from, to: addDays(anchor, ahead * rule.everyDays + 1) }
   }
-  return { from, to: addMonths(anchor, horizonMonths) }
+  return { from, to: addMonths(today, horizonMonths) }
 }
 const startOfWeek = (d: Date) => {
   const r = new Date(d)
