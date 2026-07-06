@@ -403,6 +403,94 @@ function App() {
     setModal({ open: false })
   }
 
+  // Apply the edited occurrence's details (title, time, priority, category, tags,
+  // reminders, sound, all-day/window) to this occurrence AND every later one in
+  // the series — plus the series template, so future projections inherit it too.
+  // Each occurrence keeps its own date and notes; earlier occurrences are left be.
+  const applyForwardMut = useMutation({
+    mutationFn: async ({
+      seriesId,
+      fromEventId,
+      input,
+      reminders: rem,
+      sound,
+    }: {
+      seriesId: string
+      fromEventId: string
+      input: EventInputData
+      reminders: ReminderDraft[]
+      sound?: SoundChange
+    }) => {
+      const own = (events ?? []).filter((e) => e.series_id === seriesId)
+      const fromEvent = own.find((e) => e.id === fromEventId)
+      if (!fromEvent) return
+      const cutoff = dayStart(fromEvent.starts_at).getTime()
+
+      const allDay = input.all_day
+      const editStart = new Date(input.starts_at)
+      const hh = editStart.getHours()
+      const mm = editStart.getMinutes()
+      const timeOfDay = allDay ? null : `${pad(hh)}:${pad(mm)}:00`
+      const windowDays =
+        allDay && input.ends_at
+          ? Math.max(
+              1,
+              Math.round(
+                (new Date(input.ends_at).getTime() - dayStart(input.starts_at).getTime()) / 86_400_000,
+              ),
+            )
+          : null
+
+      // Series template — so newly projected occurrences match too.
+      await updateSeries(seriesId, {
+        title: input.title,
+        time_of_day: timeOfDay,
+        all_day: allDay,
+        window_days: windowDays,
+        priority_tier_id: input.priority_tier_id,
+        category: input.category,
+        tags: input.tags,
+        speak: input.speak,
+        reminders: rem,
+        ...(sound !== undefined ? { sound_data: sound.data, sound_name: sound.name } : {}),
+      })
+
+      // This occurrence and every later one (confirmed + tentative).
+      const targets = own.filter((e) => dayStart(e.starts_at).getTime() >= cutoff)
+      for (const e of targets) {
+        const isEdited = e.id === fromEventId
+        const day = isEdited ? dayStart(input.starts_at) : dayStart(e.starts_at)
+        const startsAt = new Date(
+          day.getFullYear(),
+          day.getMonth(),
+          day.getDate(),
+          allDay ? 0 : hh,
+          allDay ? 0 : mm,
+          0,
+        ).toISOString()
+        const endsAt =
+          allDay && windowDays
+            ? new Date(day.getFullYear(), day.getMonth(), day.getDate() + windowDays, 0, 0, 0).toISOString()
+            : null
+        const evInput: EventInputData = {
+          title: input.title,
+          starts_at: startsAt,
+          ends_at: endsAt,
+          all_day: allDay,
+          priority_tier_id: input.priority_tier_id,
+          category: input.category,
+          tags: input.tags,
+          notes: isEdited ? input.notes : e.notes,
+          speak: input.speak,
+        }
+        await updateEvent(e.id, evInput)
+        await setEventReminders(e.id, rem, startsAt)
+        if (sound !== undefined) await setEventSound(e.id, sound.data, sound.name)
+      }
+    },
+    onSuccess: invalidateAll,
+  })
+
   // Edit a repeat: save the new rule, drop old tentatives, re-project fresh
   // (keeping confirmed occurrences).
   const updateSeriesMut = useMutation({
@@ -735,6 +823,7 @@ function App() {
             deleteMut.isPending ||
             skipMut.isPending ||
             updateSeriesMut.isPending ||
+            applyForwardMut.isPending ||
             stopSeriesMut.isPending ||
             resumeSeriesMut.isPending ||
             deleteSeriesAllMut.isPending ||
@@ -748,6 +837,9 @@ function App() {
           }
           onSkip={(id) => skipMut.mutate(id)}
           onUpdateSeries={(seriesId, rec, sound) => updateSeriesMut.mutate({ seriesId, rec, sound })}
+          onApplyForward={(seriesId, fromEventId, input, rem, sound) =>
+            applyForwardMut.mutate({ seriesId, fromEventId, input, reminders: rem, sound })
+          }
           onExtendSeries={(seriesId, toDate) => extendSeriesMut.mutate({ seriesId, toDate })}
           onStopSeries={(seriesId) => stopSeriesMut.mutate(seriesId)}
           onResumeSeries={(seriesId) => resumeSeriesMut.mutate(seriesId)}

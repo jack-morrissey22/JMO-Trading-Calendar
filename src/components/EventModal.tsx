@@ -74,6 +74,13 @@ export type EventModalProps = {
   ) => void
   onSkip?: (id: string) => void
   onUpdateSeries?: (seriesId: string, recurrence: RecurrenceValue, sound: SoundChange) => void
+  onApplyForward?: (
+    seriesId: string,
+    fromEventId: string,
+    input: EventInputData,
+    reminders: ReminderDraft[],
+    sound: SoundChange,
+  ) => void
   onExtendSeries?: (seriesId: string, toDate: string) => void
   onStopSeries?: (seriesId: string) => void
   onResumeSeries?: (seriesId: string) => void
@@ -96,6 +103,7 @@ export function EventModal({
   onConfirm,
   onSkip,
   onUpdateSeries,
+  onApplyForward,
   onExtendSeries,
   onStopSeries,
   onResumeSeries,
@@ -129,6 +137,7 @@ export function EventModal({
   // New events default to speak-on (text-to-speech is the handy default); an
   // existing event keeps whatever was saved.
   const [speak, setSpeak] = useState(event ? !!event.speak : true)
+  const [applyForward, setApplyForward] = useState(false)
   const [reminders, setReminders] = useState<ReminderDraft[]>(initialReminders ?? [])
 
   // Custom sound: soundName reflects the current attachment; soundData holds a
@@ -252,6 +261,11 @@ export function EventModal({
     e.preventDefault()
     const p = buildPayload()
     if (!p) return
+    // "Apply to all future" propagates the edited details across the series.
+    if (applyForward && series && event) {
+      onApplyForward?.(series.id, event.id, p.input, reminders, p.sound)
+      return
+    }
     // Recurrence flows through Save for a NEW event or when turning an existing
     // one-off into a series. Series events manage their pattern via onUpdateSeries,
     // so we never re-send recurrence for them here.
@@ -618,6 +632,18 @@ export function EventModal({
           </p>
         )}
 
+        {editing && series && (
+          <label className="field-check apply-forward">
+            <input
+              type="checkbox"
+              checked={applyForward}
+              onChange={(e) => setApplyForward(e.target.checked)}
+            />
+            ⏩ Apply these details (title, time, priority, category, tags, reminders, sound) to this
+            and all <strong>later</strong> occurrences in the series
+          </label>
+        )}
+
         <div className="modal-actions">
           {tentative ? (
             <button
@@ -653,7 +679,7 @@ export function EventModal({
               </>
             ) : (
               <button type="submit" className="btn-primary" disabled={busy}>
-                {busy ? 'Saving…' : 'Save'}
+                {busy ? 'Saving…' : applyForward ? 'Save to all later' : 'Save'}
               </button>
             )}
           </div>

@@ -634,6 +634,22 @@
   background: rgba(255, 255, 255, 0.35);
 }
 
+.apply-forward {
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+.apply-forward strong {
+  color: var(--text);
+}
+
 /* ---- Notifications (push) settings ---- */
 .modal.push-modal {
   max-width: 460px;
