@@ -640,8 +640,13 @@ export function EventModal({
               checked={applyForward}
               onChange={(e) => setApplyForward(e.target.checked)}
             />
-            ⏩ Apply these details (title, time, priority, category, tags, reminders, sound) to this
-            and all <strong>later</strong> occurrences in the series
+            <span className="apply-forward-text">
+              <strong>⏩ Apply to this and every later occurrence</strong>
+              <span className="apply-forward-sub">
+                Copies this event's title, time, priority, category, tags, reminders and sound
+                forward across the series (earlier occurrences are left unchanged).
+              </span>
+            </span>
           </label>
         )}
 
