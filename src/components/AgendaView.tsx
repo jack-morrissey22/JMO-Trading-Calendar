@@ -1,4 +1,4 @@
-import { Fragment } from 'react'
+import { Fragment, useEffect, useRef } from 'react'
 import type { EventRow } from '../lib/api'
 import { coversDate, endDay, isWindow } from '../lib/events'
 
@@ -107,8 +107,20 @@ export function AgendaView({ monthDate, events, colorOf, onEventClick }: Props) 
     </div>
   )
 
+  // On open (and when the month changes), scroll so today sits at the top —
+  // otherwise a mid/late-month "today" would be off-screen until you scrolled.
+  const rootRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+    const marker = root.querySelector<HTMLElement>('.agenda-day.is-today, .agenda-today-line')
+    const scroller = root.closest<HTMLElement>('.cal-scroll')
+    if (marker) marker.scrollIntoView({ block: 'start' })
+    else if (scroller) scroller.scrollTop = 0
+  }, [monthDate])
+
   return (
-    <div className="agenda">
+    <div className="agenda" ref={rootRef}>
       {groups.map(({ key, date, allDay, hours }, i) => {
         const isToday = date.getTime() === tTime
         return (
