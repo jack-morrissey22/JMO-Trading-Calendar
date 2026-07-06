@@ -97,6 +97,13 @@ function boundsFor(
   const lastConfirmed = confirmed.length ? Math.max(...confirmed) : null
   const from = seed > today ? seed : today
   const anchor = lastConfirmed && lastConfirmed > today.getTime() ? new Date(lastConfirmed) : today
+  // Interval series ("every N weeks") reuse horizonMonths as an OCCURRENCES-ahead
+  // count — so "project 1 ahead" keeps exactly the next occurrence materialised,
+  // independent of how many weeks the interval is.
+  if (rule.mode === 'interval') {
+    const ahead = Math.max(1, horizonMonths)
+    return { from, to: addDays(anchor, ahead * rule.everyDays + 1) }
+  }
   return { from, to: addMonths(anchor, horizonMonths) }
 }
 const startOfWeek = (d: Date) => {
@@ -320,6 +327,12 @@ function App() {
           input.all_day && input.ends_at
             ? Math.max(1, Math.round((new Date(input.ends_at).getTime() - start.getTime()) / 86_400_000))
             : null
+        const seedDay = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+        // Interval series are anchored to THIS event's date (its cadence phase).
+        const rule =
+          recurrence.rule.mode === 'interval'
+            ? { ...recurrence.rule, anchor: fmtDate(seedDay) }
+            : recurrence.rule
         const s = await createSeries({
           title: input.title,
           time_of_day,
@@ -330,16 +343,15 @@ function App() {
           tags: input.tags,
           speak: input.speak,
           reminders: rem,
-          rule: recurrence.rule,
+          rule,
           horizon_months: recurrence.horizonMonths,
           active: true,
           sound_data: sound?.data ?? null,
           sound_name: sound?.name ?? null,
         })
         await setEventSeriesId(eventId, s.id)
-        const seedDay = new Date(start.getFullYear(), start.getMonth(), start.getDate())
         const ownSeed = [{ starts_at: input.starts_at, status: 'confirmed' } as EventRow]
-        const { from, to } = boundsFor(ownSeed, recurrence.rule, recurrence.horizonMonths)
+        const { from, to } = boundsFor(ownSeed, rule, recurrence.horizonMonths)
         await projectSeries(s, new Set([fmtDate(seedDay)]), from, to)
       }
     },

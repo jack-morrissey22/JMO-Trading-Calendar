@@ -13,6 +13,7 @@ export type RecurrenceRule =
   | { mode: 'weekly'; weekdays: number[] } // 0=Sun..6=Sat
   | { mode: 'monthly'; months: number[]; day: DayRule } // months: 1..12 (all 12 = monthly, [3,6,9,12] = quarterly, etc.)
   | { mode: 'manual'; dates: string[] } // explicit YYYY-MM-DD dates (no formula)
+  | { mode: 'interval'; everyDays: number; anchor: string } // every N days from an anchor date (e.g. central-bank ~6 weeks)
 
 const isWeekend = (d: Date) => d.getDay() === 0 || d.getDay() === 6
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
@@ -85,6 +86,18 @@ export function computeOccurrences(rule: RecurrenceRule, from: Date, to: Date): 
       .filter((d) => !isNaN(d.getTime()) && d >= f && d <= to)
       .sort((a, b) => a.getTime() - b.getTime())
   }
+  if (rule.mode === 'interval') {
+    const anchor = new Date(`${rule.anchor}T00:00:00`)
+    if (isNaN(anchor.getTime()) || !rule.everyDays || rule.everyDays < 1) return out
+    const f = startOfDay(from)
+    let d = new Date(anchor)
+    let guard = 0
+    while (d <= to && guard++ < 5000) {
+      if (d >= f) out.push(new Date(d))
+      d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + rule.everyDays)
+    }
+    return out
+  }
   if (rule.mode === 'weekly') {
     let d = startOfDay(from)
     while (d <= to) {
@@ -128,6 +141,13 @@ function monthsLabel(months: number[]): string {
 export function describeRule(rule: RecurrenceRule): string {
   if (rule.mode === 'manual') {
     return `${rule.dates.length} specific date${rule.dates.length === 1 ? '' : 's'}`
+  }
+  if (rule.mode === 'interval') {
+    if (rule.everyDays % 7 === 0) {
+      const w = rule.everyDays / 7
+      return `every ${w} week${w === 1 ? '' : 's'}`
+    }
+    return `every ${rule.everyDays} day${rule.everyDays === 1 ? '' : 's'}`
   }
   if (rule.mode === 'weekly') {
     return `every ${rule.weekdays.map((w) => WEEKDAY_NAMES[w]).join(' & ')}`

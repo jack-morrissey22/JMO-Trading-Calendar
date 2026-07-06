@@ -14,8 +14,10 @@ type Props = {
 function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
   const base = {
     repeats: false,
-    mode: 'monthly' as 'monthly' | 'weekly' | 'manual',
+    mode: 'monthly' as 'monthly' | 'weekly' | 'manual' | 'interval',
     manualText: '',
+    intervalWeeks: 6,
+    intervalAnchor: [seed.getFullYear(), pad2(seed.getMonth() + 1), pad2(seed.getDate())].join('-'),
     monthsPreset: 'all' as 'all' | 'quarterly' | 'yearly' | 'custom',
     customMonths: [seed.getMonth() + 1],
     yearlyMonth: seed.getMonth() + 1,
@@ -42,6 +44,13 @@ function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
   if (rule.mode === 'weekly') {
     base.mode = 'weekly'
     base.weeklyDays = rule.weekdays
+    return base
+  }
+  if (rule.mode === 'interval') {
+    base.mode = 'interval'
+    base.intervalWeeks =
+      rule.everyDays % 7 === 0 ? rule.everyDays / 7 : Math.max(1, Math.round(rule.everyDays / 7))
+    base.intervalAnchor = rule.anchor
     return base
   }
   base.mode = 'monthly'
@@ -123,8 +132,10 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
   const D = useMemo(() => deriveInit(initial, seed), [])
 
   const [repeats, setRepeats] = useState(D.repeats)
-  const [mode, setMode] = useState<'monthly' | 'weekly' | 'manual'>(D.mode)
+  const [mode, setMode] = useState<'monthly' | 'weekly' | 'manual' | 'interval'>(D.mode)
   const [manualText, setManualText] = useState(D.manualText)
+  const [intervalWeeks, setIntervalWeeks] = useState(D.intervalWeeks)
+  const [intervalAnchor] = useState(D.intervalAnchor) // fixed: seed date (new) or preserved (edit)
   const [monthsPreset, setMonthsPreset] = useState<'all' | 'quarterly' | 'yearly' | 'custom'>(
     D.monthsPreset,
   )
@@ -166,6 +177,10 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
     if (mode === 'weekly') {
       return { mode: 'weekly', weekdays: [...weeklyDays].sort() }
     }
+    if (mode === 'interval') {
+      // anchor is overridden by App on create; preserved from `initial` on edit.
+      return { mode: 'interval', everyDays: Math.max(1, intervalWeeks) * 7, anchor: intervalAnchor }
+    }
     const months =
       monthsPreset === 'all'
         ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
@@ -182,7 +197,7 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
     return { mode: 'monthly', months, day }
   }, [
     repeats, mode, manualText, monthsPreset, customMonths, yearlyMonth, dayType, nth, weekday,
-    dayOfMonth, roll, nthLast, offsetDay, offsetDays, weeklyDays,
+    dayOfMonth, roll, nthLast, offsetDay, offsetDays, weeklyDays, intervalWeeks, intervalAnchor,
   ])
 
   useEffect(() => {
@@ -205,10 +220,18 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
             <span className="recur-lab">Frequency</span>
             <select
               value={mode}
-              onChange={(e) => setMode(e.target.value as 'monthly' | 'weekly' | 'manual')}
+              onChange={(e) => {
+                const m = e.target.value as 'monthly' | 'weekly' | 'manual' | 'interval'
+                // horizonMonths means "occurrences ahead" for interval (default 1),
+                // "months ahead" otherwise (default 3) — reset when crossing modes.
+                if (m === 'interval' && mode !== 'interval') setHorizonMonths(1)
+                else if (m !== 'interval' && mode === 'interval') setHorizonMonths(3)
+                setMode(m)
+              }}
             >
               <option value="monthly">Monthly-based</option>
               <option value="weekly">Weekly</option>
+              <option value="interval">Every N weeks</option>
               <option value="manual">Manual dates</option>
             </select>
           </div>
@@ -243,6 +266,18 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
                   </button>
                 ))}
               </div>
+            </div>
+          ) : mode === 'interval' ? (
+            <div className="recur-row recur-params">
+              <span className="recur-lab">Every</span>
+              <input
+                type="number"
+                min={1}
+                max={104}
+                value={intervalWeeks}
+                onChange={(e) => setIntervalWeeks(Number(e.target.value))}
+              />
+              <span>weeks, from this event's date</span>
             </div>
           ) : (
             <>
@@ -367,11 +402,17 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
                 value={horizonMonths}
                 onChange={(e) => setHorizonMonths(Number(e.target.value))}
               >
-                {HORIZONS.map((h) => (
-                  <option key={h} value={h}>
-                    {h} month{h > 1 ? 's' : ''} ahead
-                  </option>
-                ))}
+                {mode === 'interval'
+                  ? [1, 2, 3, 4].map((n) => (
+                      <option key={n} value={n}>
+                        {n} occurrence{n > 1 ? 's' : ''} ahead
+                      </option>
+                    ))
+                  : HORIZONS.map((h) => (
+                      <option key={h} value={h}>
+                        {h} month{h > 1 ? 's' : ''} ahead
+                      </option>
+                    ))}
               </select>
             </div>
           )}
@@ -379,7 +420,11 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
           {rule && (
             <p className="recur-summary">
               ↪ {describeRule(rule)}
-              {mode !== 'manual' && ` · projecting ${horizonMonths} month${horizonMonths > 1 ? 's' : ''}`}{' '}
+              {mode === 'interval'
+                ? ` · projecting ${horizonMonths} ahead`
+                : mode !== 'manual'
+                  ? ` · projecting ${horizonMonths} month${horizonMonths > 1 ? 's' : ''}`
+                  : ''}{' '}
               (tentative until you confirm each)
             </p>
           )}
