@@ -47,6 +47,21 @@ export function AgendaView({ monthDate, events, colorOf, onEventClick }: Props) 
     groups.push({ key: `${y}-${m}-${dd}`, date, allDay, hours })
   }
 
+  // "Today" guide line: highlight today's group if it has events, otherwise drop a
+  // divider at today's chronological spot (only when viewing the current month).
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const tTime = today.getTime()
+  const isCurrentMonth = today.getFullYear() === y && today.getMonth() === m
+  const hasTodayGroup = groups.some((g) => g.date.getTime() === tTime)
+  let lineIndex = -1
+  let lineAtEnd = false
+  if (isCurrentMonth && !hasTodayGroup) {
+    const idx = groups.findIndex((g) => g.date.getTime() > tTime)
+    if (idx === -1) lineAtEnd = true
+    else lineIndex = idx
+  }
+
   if (groups.length === 0) {
     return <div className="agenda-empty">No events this month.</div>
   }
@@ -86,35 +101,49 @@ export function AgendaView({ monthDate, events, colorOf, onEventClick }: Props) 
     )
   }
 
+  const todayLine = (
+    <div className="agenda-today-line">
+      <span>Today</span>
+    </div>
+  )
+
   return (
     <div className="agenda">
-      {groups.map(({ key, date, allDay, hours }) => (
-        <div key={key} className="agenda-day">
-          <div className="agenda-day-header">
-            {date.toLocaleDateString(undefined, {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-            })}
-          </div>
-
-          {allDay.length > 0 && (
-            <div className="agenda-group">
-              <div className="agenda-headline">all-day</div>
-              <div className="agenda-items">{allDay.map(allDayRow)}</div>
-            </div>
-          )}
-
-          {hours.map((g) => (
-            <Fragment key={g.hour}>
-              <div className="agenda-group">
-                <div className="agenda-headline">{pad(g.hour)}:00</div>
-                <div className="agenda-items">{g.items.map(timedRow)}</div>
+      {groups.map(({ key, date, allDay, hours }, i) => {
+        const isToday = date.getTime() === tTime
+        return (
+          <Fragment key={key}>
+            {i === lineIndex && todayLine}
+            <div className={`agenda-day${isToday ? ' is-today' : ''}`}>
+              <div className="agenda-day-header">
+                {date.toLocaleDateString(undefined, {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                })}
+                {isToday && <span className="agenda-today-tag">Today</span>}
               </div>
-            </Fragment>
-          ))}
-        </div>
-      ))}
+
+              {allDay.length > 0 && (
+                <div className="agenda-group">
+                  <div className="agenda-headline">all-day</div>
+                  <div className="agenda-items">{allDay.map(allDayRow)}</div>
+                </div>
+              )}
+
+              {hours.map((g) => (
+                <Fragment key={g.hour}>
+                  <div className="agenda-group">
+                    <div className="agenda-headline">{pad(g.hour)}:00</div>
+                    <div className="agenda-items">{g.items.map(timedRow)}</div>
+                  </div>
+                </Fragment>
+              ))}
+            </div>
+          </Fragment>
+        )
+      })}
+      {lineAtEnd && todayLine}
     </div>
   )
 }

@@ -593,7 +593,11 @@ function App() {
 
   // ---- Toolbar handlers ----
   const selectView = (next: ViewKey) => {
-    if (isFc(next) && isFc(view)) calRef.current?.getApi().changeView(FC_VIEW[next])
+    // Anchor to the current moment whenever you switch views, so Week/Day/Agenda/
+    // Month open on "now" rather than a stale date (e.g. if the app's been left
+    // open across days). Browse from there with ‹ › or jump back with Today.
+    setFocusDate(new Date())
+    if (isFc(next) && isFc(view)) calRef.current?.getApi().today()
     setView(next)
   }
 
