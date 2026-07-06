@@ -126,7 +126,9 @@ export function EventModal({
   const [tags, setTags] = useState((event?.tags ?? []).join(', '))
   const [notes, setNotes] = useState(event?.notes ?? '')
 
-  const [speak, setSpeak] = useState(event?.speak ?? false)
+  // New events default to speak-on (text-to-speech is the handy default); an
+  // existing event keeps whatever was saved.
+  const [speak, setSpeak] = useState(event ? !!event.speak : true)
   const [reminders, setReminders] = useState<ReminderDraft[]>(initialReminders ?? [])
 
   // Custom sound: soundName reflects the current attachment; soundData holds a
