@@ -1,5 +1,12 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import type { EventRow } from '../lib/api'
+
+const monthKeyOf = (iso: string) => {
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${d.getMonth()}`
+}
+const monthLabelOf = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 
 type Props = {
   events: EventRow[] // upcoming tentative events, pre-sorted
@@ -64,6 +71,15 @@ export function SuggestionsInbox({
 
   const filtering = query.trim() !== '' || name !== '' || category !== ''
 
+  // Count per calendar month (of the filtered set) for the month separators.
+  const monthCounts = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const e of filtered) m.set(monthKeyOf(e.starts_at), (m.get(monthKeyOf(e.starts_at)) ?? 0) + 1)
+    return m
+  }, [filtered])
+  const now = new Date()
+  const currentMonthKey = `${now.getFullYear()}-${now.getMonth()}`
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal inbox" onClick={(e) => e.stopPropagation()}>
@@ -114,14 +130,24 @@ export function SuggestionsInbox({
               <div className="inbox-empty">No suggestions match your filter.</div>
             ) : (
               <div className="inbox-list">
-                {filtered.map((e) => (
-                  <div className="inbox-row" key={e.id}>
-                    <span className="inbox-dot" style={{ background: colorOf(e.priority_tier_id) }} />
-                    <div className="inbox-main">
-                      <div className="inbox-title">{e.title}</div>
-                      <div className="inbox-when">{whenLabel(e)}</div>
-                    </div>
-                    <div className="inbox-actions">
+                {filtered.map((e, i) => {
+                  const mKey = monthKeyOf(e.starts_at)
+                  const showMonth = i === 0 || mKey !== monthKeyOf(filtered[i - 1].starts_at)
+                  return (
+                    <Fragment key={e.id}>
+                      {showMonth && (
+                        <div className={`inbox-month${mKey === currentMonthKey ? ' is-current' : ''}`}>
+                          <span>{monthLabelOf(e.starts_at)}</span>
+                          <span className="inbox-month-count">{monthCounts.get(mKey)}</span>
+                        </div>
+                      )}
+                      <div className="inbox-row">
+                        <span className="inbox-dot" style={{ background: colorOf(e.priority_tier_id) }} />
+                        <div className="inbox-main">
+                          <div className="inbox-title">{e.title}</div>
+                          <div className="inbox-when">{whenLabel(e)}</div>
+                        </div>
+                        <div className="inbox-actions">
                       <button
                         className="btn-primary inbox-btn"
                         disabled={busy}
@@ -135,9 +161,11 @@ export function SuggestionsInbox({
                       <button className="btn-ghost inbox-btn" disabled={busy} onClick={() => onSkip(e.id)}>
                         Skip
                       </button>
-                    </div>
-                  </div>
-                ))}
+                        </div>
+                      </div>
+                    </Fragment>
+                  )
+                })}
               </div>
             )}
 

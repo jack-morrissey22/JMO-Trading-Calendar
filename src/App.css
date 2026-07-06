@@ -953,6 +953,31 @@
   overflow-y: auto;
   margin: 6px 0;
 }
+.inbox-month {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  padding: 10px 4px 4px;
+  margin-top: 4px;
+  border-bottom: 2px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 1;
+}
+.inbox-month.is-current {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.inbox-month-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
 .inbox-row {
   display: flex;
   align-items: center;
