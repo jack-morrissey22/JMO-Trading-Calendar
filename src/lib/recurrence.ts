@@ -8,6 +8,7 @@ export type DayRule =
   | { type: 'day_of_month'; day: number; roll: 'next' | 'prev' | 'none' } // roll weekend to a weekday
   | { type: 'nth_last_bizday'; nth: number } // 1 = last weekday, 2 = 2nd-last, …
   | { type: 'offset_snap'; day: number; offsetDays: number } // anchor day-of-month ± offset, snap to nearest weekday
+  | { type: 'bizdays_before_dom'; day: number; bizdays: number } // N business days BEFORE the Dth calendar day (e.g. expiries)
 
 export type RecurrenceRule =
   | { mode: 'weekly'; weekdays: number[] } // 0=Sun..6=Sat
@@ -73,6 +74,18 @@ function dayInMonth(y: number, m: number, rule: DayRule): Date | null {
       if (anchor.getMonth() !== m) return null
       return snapWeekday(new Date(y, m, rule.day + rule.offsetDays))
     }
+    case 'bizdays_before_dom': {
+      // Start at the Dth calendar day (clamp if the month is short), then step
+      // back `bizdays` business days (weekdays only).
+      let d = new Date(y, m, rule.day)
+      if (d.getMonth() !== m) d = new Date(y, m + 1, 0)
+      let k = rule.bizdays
+      while (k > 0) {
+        d = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1)
+        if (!isWeekend(d)) k--
+      }
+      return d
+    }
   }
 }
 
@@ -128,6 +141,12 @@ const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', '
 const MONTH_NAMES = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const ORDINAL = ['', '1st', '2nd', '3rd', '4th']
 const ord = (n: number) => (n === -1 ? 'last' : (ORDINAL[n] ?? `${n}th`))
+// Ordinal for any day-of-month (1st, 2nd, 3rd, 4th … 11th, 21st, 22nd …).
+function ordinalDay(n: number): string {
+  const v = n % 100
+  const suffix = v >= 11 && v <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'
+  return `${n}${suffix}`
+}
 
 function monthsLabel(months: number[]): string {
   if (months.length === 12) return 'every month'
@@ -166,6 +185,9 @@ export function describeRule(rule: RecurrenceRule): string {
       break
     case 'offset_snap':
       day = `${Math.abs(d.offsetDays)} days ${d.offsetDays < 0 ? 'before' : 'after'} the ${d.day} (nearest weekday)`
+      break
+    case 'bizdays_before_dom':
+      day = `${d.bizdays} business day${d.bizdays === 1 ? '' : 's'} before the ${ordinalDay(d.day)}`
       break
   }
   return `${day} of ${monthsLabel(rule.months)}`

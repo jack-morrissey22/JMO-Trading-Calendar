@@ -29,6 +29,8 @@ function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
     nthLast: 1,
     offsetDay: 25,
     offsetDays: -7,
+    bizDom: 15, // reference day-of-month for "N business days before the Dth"
+    bizDaysBefore: 2,
     weeklyDays: [seed.getDay()],
     horizonMonths: 3,
   }
@@ -78,6 +80,9 @@ function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
   } else if (d.type === 'offset_snap') {
     base.offsetDay = d.day
     base.offsetDays = d.offsetDays
+  } else if (d.type === 'bizdays_before_dom') {
+    base.bizDom = d.day
+    base.bizDaysBefore = d.bizdays
   }
   return base
 }
@@ -110,6 +115,10 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const HORIZONS = [1, 2, 3, 6, 12]
 
 const pad2 = (n: number) => String(n).padStart(2, '0')
+const ordinalSuffix = (n: number) => {
+  const v = n % 100
+  return v >= 11 && v <= 13 ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th')
+}
 // Parse a pasted blob of dates (newline/comma separated) into YYYY-MM-DD strings.
 function parseManualDates(text: string): string[] {
   return text
@@ -149,6 +158,8 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
   const [nthLast, setNthLast] = useState(D.nthLast)
   const [offsetDay, setOffsetDay] = useState(D.offsetDay)
   const [offsetDays, setOffsetDays] = useState(D.offsetDays)
+  const [bizDom, setBizDom] = useState(D.bizDom)
+  const [bizDaysBefore, setBizDaysBefore] = useState(D.bizDaysBefore)
   const [weeklyDays, setWeeklyDays] = useState<number[]>(D.weeklyDays)
   const [horizonMonths, setHorizonMonths] = useState(D.horizonMonths)
 
@@ -193,11 +204,14 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
     if (dayType === 'nth_weekday') day = { type: 'nth_weekday', nth, weekday }
     else if (dayType === 'day_of_month') day = { type: 'day_of_month', day: dayOfMonth, roll }
     else if (dayType === 'nth_last_bizday') day = { type: 'nth_last_bizday', nth: nthLast }
+    else if (dayType === 'bizdays_before_dom')
+      day = { type: 'bizdays_before_dom', day: bizDom, bizdays: bizDaysBefore }
     else day = { type: 'offset_snap', day: offsetDay, offsetDays }
     return { mode: 'monthly', months, day }
   }, [
     repeats, mode, manualText, monthsPreset, customMonths, yearlyMonth, dayType, nth, weekday,
-    dayOfMonth, roll, nthLast, offsetDay, offsetDays, weeklyDays, intervalWeeks, intervalAnchor,
+    dayOfMonth, roll, nthLast, offsetDay, offsetDays, bizDom, bizDaysBefore, weeklyDays,
+    intervalWeeks, intervalAnchor,
   ])
 
   useEffect(() => {
@@ -324,6 +338,7 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
                   <option value="nth_weekday">Nth weekday</option>
                   <option value="day_of_month">Day of month</option>
                   <option value="nth_last_bizday">Nth-last business day</option>
+                  <option value="bizdays_before_dom">Business days before a date</option>
                   <option value="offset_snap">Offset from a date</option>
                 </select>
               </div>
@@ -372,6 +387,26 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
                       </option>
                     ))}
                   </select>
+                )}
+                {dayType === 'bizdays_before_dom' && (
+                  <>
+                    <input
+                      type="number"
+                      min={0}
+                      max={20}
+                      value={bizDaysBefore}
+                      onChange={(e) => setBizDaysBefore(Number(e.target.value))}
+                    />
+                    <span>business days before the</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={bizDom}
+                      onChange={(e) => setBizDom(Number(e.target.value))}
+                    />
+                    <span>{ordinalSuffix(bizDom)}</span>
+                  </>
                 )}
                 {dayType === 'offset_snap' && (
                   <>
