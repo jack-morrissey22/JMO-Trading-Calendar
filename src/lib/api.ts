@@ -405,10 +405,15 @@ export async function projectSeries(
   const dates = computeOccurrences(series.rule, from, to).filter((d) => !existingDateKeys.has(ymd(d)))
   if (dates.length === 0) return 0
 
+  const todayMid = new Date()
+  todayMid.setHours(0, 0, 0, 0)
   const eventRows = dates.map((d) => ({
     user_id,
     series_id: series.id,
-    status: 'tentative',
+    // A date already in the past is history (it happened) → land it confirmed; a
+    // future date is tentative for the user to confirm. (Only manual series ever
+    // produce past dates — the other modes project from today onward.)
+    status: d.getTime() < todayMid.getTime() ? 'confirmed' : 'tentative',
     title: series.title,
     starts_at: startsAtFor(series, d),
     ends_at:
@@ -432,8 +437,12 @@ export async function projectSeries(
   if (error) throw error
 
   if (series.reminders.length > 0 && inserted) {
-    const remRows = (inserted as { id: string; starts_at: string }[]).flatMap((ev) =>
-      series.reminders.map((r) => ({
+    const now = Date.now()
+    const remRows = (inserted as { id: string; starts_at: string }[])
+      // Skip reminders for back-dated (past) occurrences — they can never fire.
+      .filter((ev) => new Date(ev.starts_at).getTime() >= now)
+      .flatMap((ev) =>
+        series.reminders.map((r) => ({
         event_id: ev.id,
         user_id,
         kind: r.kind,

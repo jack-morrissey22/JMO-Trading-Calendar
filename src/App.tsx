@@ -91,8 +91,9 @@ function boundsFor(
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   // Manual series have an explicit date list, not a rolling window — materialise
-  // all future listed dates.
-  if (rule.mode === 'manual') return { from: today, to: addMonths(today, 600) }
+  // every listed date, including ones already in the past (they land confirmed, as
+  // history; projectSeries decides past=confirmed / future=tentative).
+  if (rule.mode === 'manual') return { from: addMonths(today, -1200), to: addMonths(today, 600) }
   const seed = own.length
     ? new Date(Math.min(...own.map((e) => dayStart(e.starts_at).getTime())))
     : new Date(today)
