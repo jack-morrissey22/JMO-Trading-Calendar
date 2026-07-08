@@ -908,6 +908,23 @@
   font-size: 11.5px;
   color: var(--text-dim);
 }
+.recur-manual-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.recur-manual-year {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+.recur-manual-year select {
+  font-size: 12px;
+}
 
 /* ---- Suggestions inbox ---- */
 .tentative-hint {

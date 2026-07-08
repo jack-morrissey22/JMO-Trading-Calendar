@@ -16,6 +16,7 @@ function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
     repeats: false,
     mode: 'monthly' as 'monthly' | 'weekly' | 'manual' | 'interval',
     manualText: '',
+    manualYear: new Date().getFullYear(),
     intervalWeeks: 6,
     intervalAnchor: [seed.getFullYear(), pad2(seed.getMonth() + 1), pad2(seed.getDate())].join('-'),
     monthsPreset: 'all' as 'all' | 'quarterly' | 'yearly' | 'custom',
@@ -120,14 +121,18 @@ const ordinalSuffix = (n: number) => {
   return v >= 11 && v <= 13 ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th')
 }
 // Parse a pasted blob of dates (newline/comma separated) into YYYY-MM-DD strings.
-function parseManualDates(text: string): string[] {
+// Dates that don't carry a year (e.g. "Jan. 12", which JS would otherwise stick
+// in the year 2001) get `defaultYear` applied; explicit years are kept as-is.
+function parseManualDates(text: string, defaultYear: number): string[] {
   return text
     .split(/[\n,;]+/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((s) => {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
-      const d = new Date(s)
+    .map((raw) => {
+      const s0 = raw.trim().replace(/^and\s+/i, '') // "and Dec. 10" → "Dec. 10"
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s0)) return s0 // already ISO with a year
+      const hasYear = /\d{4}/.test(s0)
+      const s = s0.replace(/\./g, ' ').replace(/\s+/g, ' ').trim() // drop "Jan." dots
+      if (!s) return null
+      const d = new Date(hasYear ? s : `${s} ${defaultYear}`)
       return isNaN(d.getTime())
         ? null
         : `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
@@ -143,6 +148,7 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
   const [repeats, setRepeats] = useState(D.repeats)
   const [mode, setMode] = useState<'monthly' | 'weekly' | 'manual' | 'interval'>(D.mode)
   const [manualText, setManualText] = useState(D.manualText)
+  const [manualYear, setManualYear] = useState(D.manualYear)
   const [intervalWeeks, setIntervalWeeks] = useState(D.intervalWeeks)
   const [intervalAnchor] = useState(D.intervalAnchor) // fixed: seed date (new) or preserved (edit)
   const [monthsPreset, setMonthsPreset] = useState<'all' | 'quarterly' | 'yearly' | 'custom'>(
@@ -183,7 +189,7 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
   const rule = useMemo<RecurrenceRule | null>(() => {
     if (!repeats) return null
     if (mode === 'manual') {
-      return { mode: 'manual', dates: parseManualDates(manualText) }
+      return { mode: 'manual', dates: parseManualDates(manualText, manualYear) }
     }
     if (mode === 'weekly') {
       return { mode: 'weekly', weekdays: [...weeklyDays].sort() }
@@ -209,8 +215,8 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
     else day = { type: 'offset_snap', day: offsetDay, offsetDays }
     return { mode: 'monthly', months, day }
   }, [
-    repeats, mode, manualText, monthsPreset, customMonths, yearlyMonth, dayType, nth, weekday,
-    dayOfMonth, roll, nthLast, offsetDay, offsetDays, bizDom, bizDaysBefore, weeklyDays,
+    repeats, mode, manualText, manualYear, monthsPreset, customMonths, yearlyMonth, dayType, nth,
+    weekday, dayOfMonth, roll, nthLast, offsetDay, offsetDays, bizDom, bizDaysBefore, weeklyDays,
     intervalWeeks, intervalAnchor,
   ])
 
@@ -260,9 +266,24 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
                   value={manualText}
                   onChange={(e) => setManualText(e.target.value)}
                 />
-                <span className="recur-manual-count">
-                  {parseManualDates(manualText).length} date(s) recognised
-                </span>
+                <div className="recur-manual-foot">
+                  <span className="recur-manual-count">
+                    {parseManualDates(manualText, manualYear).length} date(s) recognised
+                  </span>
+                  <label className="recur-manual-year">
+                    Year if not given
+                    <select value={manualYear} onChange={(e) => setManualYear(Number(e.target.value))}>
+                      {[0, 1, 2].map((off) => {
+                        const y = new Date().getFullYear() + off
+                        return (
+                          <option key={y} value={y}>
+                            {y}
+                          </option>
+                        )
+                      })}
+                    </select>
+                  </label>
+                </div>
               </div>
             </div>
           ) : mode === 'weekly' ? (
