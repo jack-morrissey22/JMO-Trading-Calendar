@@ -305,6 +305,7 @@ export type SeriesRow = {
   active: boolean
   sound_data: string | null // inline base64 clip; every occurrence inherits it
   sound_name: string | null // filename / "has a custom sound" flag
+  notes: string | null // optional series-wide note; new occurrences inherit it
 }
 
 export type SeriesInput = Omit<SeriesRow, 'id'>
@@ -313,7 +314,7 @@ export async function fetchSeries(): Promise<SeriesRow[]> {
   const { data, error } = await supabase
     .from('series')
     .select(
-      'id, title, time_of_day, all_day, window_days, priority_tier_id, category, tags, speak, reminders, rule, horizon_months, active, sound_data, sound_name',
+      'id, title, time_of_day, all_day, window_days, priority_tier_id, category, tags, speak, reminders, rule, horizon_months, active, sound_data, sound_name, notes',
     )
   if (error) throw error
   return (data ?? []) as SeriesRow[]
@@ -352,6 +353,23 @@ export async function setSeriesEventsSound(
     .update({ sound_data: dataUri, sound_name: name })
     .eq('series_id', seriesId)
   if (error) throw error
+}
+
+/** Set a shared note on the series (so future occurrences inherit it) and copy it
+ *  onto this + all later existing occurrences (from `fromIso` forward). */
+export async function applySeriesNotesForward(
+  seriesId: string,
+  notes: string | null,
+  fromIso: string,
+): Promise<void> {
+  const s = await supabase.from('series').update({ notes }).eq('id', seriesId)
+  if (s.error) throw s.error
+  const e = await supabase
+    .from('events')
+    .update({ notes })
+    .eq('series_id', seriesId)
+    .gte('starts_at', fromIso)
+  if (e.error) throw e.error
 }
 
 /** Delete only the unconfirmed (tentative) occurrences of a series (their
@@ -415,6 +433,7 @@ export async function projectSeries(
     // produce past dates — the other modes project from today onward.)
     status: d.getTime() < todayMid.getTime() ? 'confirmed' : 'tentative',
     title: series.title,
+    notes: series.notes ?? null,
     starts_at: startsAtFor(series, d),
     ends_at:
       series.all_day && series.window_days
@@ -424,7 +443,6 @@ export async function projectSeries(
     priority_tier_id: series.priority_tier_id,
     category: series.category,
     tags: series.tags,
-    notes: null,
     extra: { speak: series.speak },
     sound_data: series.sound_data,
     sound_name: series.sound_name,

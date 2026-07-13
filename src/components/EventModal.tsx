@@ -81,6 +81,7 @@ export type EventModalProps = {
     reminders: ReminderDraft[],
     sound: SoundChange,
   ) => void
+  onApplyNotes?: (seriesId: string, fromEventId: string, notes: string | null) => void
   onExtendSeries?: (seriesId: string, toDate: string) => void
   onStopSeries?: (seriesId: string) => void
   onResumeSeries?: (seriesId: string) => void
@@ -104,6 +105,7 @@ export function EventModal({
   onSkip,
   onUpdateSeries,
   onApplyForward,
+  onApplyNotes,
   onExtendSeries,
   onStopSeries,
   onResumeSeries,
@@ -139,6 +141,7 @@ export function EventModal({
   // existing event keeps whatever was saved.
   const [speak, setSpeak] = useState(event ? !!event.speak : true)
   const [applyForward, setApplyForward] = useState(false)
+  const [notesToSeries, setNotesToSeries] = useState(false)
   const [reminders, setReminders] = useState<ReminderDraft[]>(initialReminders ?? [])
 
   // Custom sound: soundName reflects the current attachment; soundData holds a
@@ -265,6 +268,7 @@ export function EventModal({
     // "Apply to all future" propagates the edited details across the series.
     if (applyForward && series && event) {
       onApplyForward?.(series.id, event.id, p.input, reminders, p.sound)
+      if (notesToSeries) onApplyNotes?.(series.id, event.id, p.input.notes ?? null)
       return
     }
     // Recurrence flows through Save for a NEW event or when turning an existing
@@ -272,6 +276,8 @@ export function EventModal({
     // so we never re-send recurrence for them here.
     const recForSave = series ? null : recurrence
     onSave(p.input, reminders, p.sound, recForSave, event?.id)
+    // Independently, spread this note across the series if asked.
+    if (notesToSeries && series && event) onApplyNotes?.(series.id, event.id, p.input.notes ?? null)
   }
 
   function doConfirm() {
@@ -401,6 +407,17 @@ export function EventModal({
           Notes
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
         </label>
+        {editing && series && (
+          <label className="field-check notes-to-series">
+            <input
+              type="checkbox"
+              checked={notesToSeries}
+              onChange={(e) => setNotesToSeries(e.target.checked)}
+            />
+            📝 Keep this note on this and every later occurrence in the series (handy for a
+            recurring note like which exchanges are open/closed on a holiday)
+          </label>
+        )}
 
         <div className="field reminders-field">
           Reminders

@@ -22,6 +22,7 @@ import {
   createSeries,
   deleteEvent,
   deletePriorityTier,
+  applySeriesNotesForward,
   deleteSeriesAll,
   deleteSeriesTentatives,
   fetchEvents,
@@ -352,6 +353,7 @@ function App() {
           active: true,
           sound_data: sound?.data ?? null,
           sound_name: sound?.name ?? null,
+          notes: null,
         })
         await setEventSeriesId(eventId, s.id)
         const ownSeed = [{ starts_at: input.starts_at, status: 'confirmed' } as EventRow]
@@ -491,6 +493,25 @@ function App() {
         await setEventReminders(e.id, rem, startsAt)
         if (sound !== undefined) await setEventSound(e.id, sound.data, sound.name)
       }
+    },
+    onSuccess: invalidateAll,
+  })
+
+  // Store a note on the series (future occurrences inherit it) and copy it onto
+  // this + all later existing occurrences.
+  const applyNotesMut = useMutation({
+    mutationFn: async ({
+      seriesId,
+      fromEventId,
+      notes,
+    }: {
+      seriesId: string
+      fromEventId: string
+      notes: string | null
+    }) => {
+      const fromEvent = (events ?? []).find((e) => e.id === fromEventId)
+      const fromIso = (fromEvent ? dayStart(fromEvent.starts_at) : new Date(0)).toISOString()
+      await applySeriesNotesForward(seriesId, notes, fromIso)
     },
     onSuccess: invalidateAll,
   })
@@ -832,6 +853,7 @@ function App() {
             skipMut.isPending ||
             updateSeriesMut.isPending ||
             applyForwardMut.isPending ||
+            applyNotesMut.isPending ||
             stopSeriesMut.isPending ||
             resumeSeriesMut.isPending ||
             deleteSeriesAllMut.isPending ||
@@ -847,6 +869,9 @@ function App() {
           onUpdateSeries={(seriesId, rec, sound) => updateSeriesMut.mutate({ seriesId, rec, sound })}
           onApplyForward={(seriesId, fromEventId, input, rem, sound) =>
             applyForwardMut.mutate({ seriesId, fromEventId, input, reminders: rem, sound })
+          }
+          onApplyNotes={(seriesId, fromEventId, notes) =>
+            applyNotesMut.mutate({ seriesId, fromEventId, notes })
           }
           onExtendSeries={(seriesId, toDate) => extendSeriesMut.mutate({ seriesId, toDate })}
           onStopSeries={(seriesId) => stopSeriesMut.mutate(seriesId)}
