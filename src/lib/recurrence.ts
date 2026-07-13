@@ -6,6 +6,7 @@
 export type DayRule =
   | { type: 'nth_weekday'; nth: number; weekday: number } // nth: 1..4, or -1 = last. weekday 0=Sun..6=Sat
   | { type: 'day_of_month'; day: number; roll: 'next' | 'prev' | 'none' } // roll weekend to a weekday
+  | { type: 'nth_bizday'; nth: number } // Nth business day counting FROM the start (1 = 1st weekday)
   | { type: 'nth_last_bizday'; nth: number } // 1 = last weekday, 2 = 2nd-last, …
   | { type: 'offset_snap'; day: number; offsetDays: number } // anchor day-of-month ± offset, snap to nearest weekday
   | { type: 'bizdays_before_dom'; day: number; bizdays: number } // N business days BEFORE the Dth calendar day (e.g. expiries)
@@ -30,6 +31,19 @@ function nthWeekdayOfMonth(y: number, m: number, nth: number, wd: number): Date 
   const day = 1 + off + (nth - 1) * 7
   const d = new Date(y, m, day)
   return d.getMonth() === m ? d : null // e.g. no 5th Friday
+}
+
+function nthBizday(y: number, m: number, nth: number): Date | null {
+  let d = new Date(y, m, 1)
+  let count = 0
+  while (d.getMonth() === m) {
+    if (!isWeekend(d)) {
+      count++
+      if (count === nth) return d
+    }
+    d = new Date(y, m, d.getDate() + 1)
+  }
+  return null // month has fewer than `nth` business days
 }
 
 function nthLastBizday(y: number, m: number, nth: number): Date {
@@ -67,6 +81,8 @@ function dayInMonth(y: number, m: number, rule: DayRule): Date | null {
       if (d.getMonth() !== m) return null
       return rollWeekend(d, rule.roll)
     }
+    case 'nth_bizday':
+      return nthBizday(y, m, rule.nth)
     case 'nth_last_bizday':
       return nthLastBizday(y, m, rule.nth)
     case 'offset_snap': {
@@ -179,6 +195,9 @@ export function describeRule(rule: RecurrenceRule): string {
       break
     case 'day_of_month':
       day = `the ${d.day}${d.roll !== 'none' ? ` (roll to ${d.roll === 'next' ? 'next' : 'previous'} weekday)` : ''}`
+      break
+    case 'nth_bizday':
+      day = `the ${ordinalDay(d.nth)} business day`
       break
     case 'nth_last_bizday':
       day = `the ${d.nth === 1 ? 'last' : `${ord(d.nth)}-last`} business day`
