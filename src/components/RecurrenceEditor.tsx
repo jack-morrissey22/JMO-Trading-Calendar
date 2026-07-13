@@ -17,6 +17,9 @@ function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
     mode: 'monthly' as 'monthly' | 'weekly' | 'manual' | 'interval',
     manualText: '',
     manualYear: new Date().getFullYear(),
+    manualShiftOn: false,
+    manualShiftN: 1,
+    manualShiftUnit: 'business' as 'business' | 'calendar',
     intervalWeeks: 6,
     intervalAnchor: [seed.getFullYear(), pad2(seed.getMonth() + 1), pad2(seed.getDate())].join('-'),
     monthsPreset: 'all' as 'all' | 'quarterly' | 'yearly' | 'custom',
@@ -123,22 +126,47 @@ const ordinalSuffix = (n: number) => {
   const v = n % 100
   return v >= 11 && v <= 13 ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th')
 }
+const isWeekendD = (d: Date) => d.getDay() === 0 || d.getDay() === 6
+// Shift a date back N business or calendar days (for e.g. "the business day before
+// each first-notice-day" — you paste notice days, store the day before).
+function shiftDaysBefore(d: Date, n: number, unit: 'business' | 'calendar'): Date {
+  if (n <= 0) return d
+  if (unit === 'calendar') return new Date(d.getFullYear(), d.getMonth(), d.getDate() - n)
+  let r = new Date(d)
+  let k = n
+  while (k > 0) {
+    r = new Date(r.getFullYear(), r.getMonth(), r.getDate() - 1)
+    if (!isWeekendD(r)) k--
+  }
+  return r
+}
+
 // Parse a pasted blob of dates (newline/comma separated) into YYYY-MM-DD strings.
 // Dates that don't carry a year (e.g. "Jan. 12", which JS would otherwise stick
 // in the year 2001) get `defaultYear` applied; explicit years are kept as-is.
-function parseManualDates(text: string, defaultYear: number): string[] {
+// Optionally shift each resolved date back by `shiftDays` business/calendar days.
+function parseManualDates(
+  text: string,
+  defaultYear: number,
+  shiftDays = 0,
+  shiftUnit: 'business' | 'calendar' = 'business',
+): string[] {
   return text
     .split(/[\n,;]+/)
     .map((raw) => {
       const s0 = raw.trim().replace(/^and\s+/i, '') // "and Dec. 10" → "Dec. 10"
-      if (/^\d{4}-\d{2}-\d{2}$/.test(s0)) return s0 // already ISO with a year
-      const hasYear = /\d{4}/.test(s0)
-      const s = s0.replace(/\./g, ' ').replace(/\s+/g, ' ').trim() // drop "Jan." dots
-      if (!s) return null
-      const d = new Date(hasYear ? s : `${s} ${defaultYear}`)
-      return isNaN(d.getTime())
-        ? null
-        : `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+      let d: Date
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s0)) {
+        d = new Date(`${s0}T00:00:00`)
+      } else {
+        const hasYear = /\d{4}/.test(s0)
+        const s = s0.replace(/\./g, ' ').replace(/\s+/g, ' ').trim() // drop "Jan." dots
+        if (!s) return null
+        d = new Date(hasYear ? s : `${s} ${defaultYear}`)
+      }
+      if (isNaN(d.getTime())) return null
+      if (shiftDays > 0) d = shiftDaysBefore(d, shiftDays, shiftUnit)
+      return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
     })
     .filter((x): x is string => !!x)
 }
@@ -152,6 +180,9 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
   const [mode, setMode] = useState<'monthly' | 'weekly' | 'manual' | 'interval'>(D.mode)
   const [manualText, setManualText] = useState(D.manualText)
   const [manualYear, setManualYear] = useState(D.manualYear)
+  const [manualShiftOn, setManualShiftOn] = useState(D.manualShiftOn)
+  const [manualShiftN, setManualShiftN] = useState(D.manualShiftN)
+  const [manualShiftUnit, setManualShiftUnit] = useState<'business' | 'calendar'>(D.manualShiftUnit)
   const [intervalWeeks, setIntervalWeeks] = useState(D.intervalWeeks)
   const [intervalAnchor] = useState(D.intervalAnchor) // fixed: seed date (new) or preserved (edit)
   const [monthsPreset, setMonthsPreset] = useState<'all' | 'quarterly' | 'yearly' | 'custom'>(
@@ -193,7 +224,10 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
   const rule = useMemo<RecurrenceRule | null>(() => {
     if (!repeats) return null
     if (mode === 'manual') {
-      return { mode: 'manual', dates: parseManualDates(manualText, manualYear) }
+      return {
+        mode: 'manual',
+        dates: parseManualDates(manualText, manualYear, manualShiftOn ? manualShiftN : 0, manualShiftUnit),
+      }
     }
     if (mode === 'weekly') {
       return { mode: 'weekly', weekdays: [...weeklyDays].sort() }
@@ -220,7 +254,8 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
     else day = { type: 'offset_snap', day: offsetDay, offsetDays }
     return { mode: 'monthly', months, day }
   }, [
-    repeats, mode, manualText, manualYear, monthsPreset, customMonths, yearlyMonth, dayType, nth,
+    repeats, mode, manualText, manualYear, manualShiftOn, manualShiftN, manualShiftUnit,
+    monthsPreset, customMonths, yearlyMonth, dayType, nth,
     weekday, dayOfMonth, roll, nthBiz, nthLast, offsetDay, offsetDays, bizDom, bizDaysBefore, weeklyDays,
     intervalWeeks, intervalAnchor,
   ])
@@ -273,7 +308,8 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
                 />
                 <div className="recur-manual-foot">
                   <span className="recur-manual-count">
-                    {parseManualDates(manualText, manualYear).length} date(s) recognised
+                    {parseManualDates(manualText, manualYear, manualShiftOn ? manualShiftN : 0, manualShiftUnit).length}{' '}
+                    date(s) recognised
                   </span>
                   <label className="recur-manual-year">
                     Year if not given
@@ -289,6 +325,41 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
                     </select>
                   </label>
                 </div>
+                <label className="recur-manual-shift">
+                  <input
+                    type="checkbox"
+                    checked={manualShiftOn}
+                    onChange={(e) => setManualShiftOn(e.target.checked)}
+                  />
+                  Resolve each to
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={manualShiftN}
+                    disabled={!manualShiftOn}
+                    onChange={(e) => setManualShiftN(Number(e.target.value))}
+                  />
+                  <select
+                    value={manualShiftUnit}
+                    disabled={!manualShiftOn}
+                    onChange={(e) => setManualShiftUnit(e.target.value as 'business' | 'calendar')}
+                  >
+                    <option value="business">business day(s)</option>
+                    <option value="calendar">calendar day(s)</option>
+                  </select>
+                  before each pasted date
+                </label>
+                {manualShiftOn &&
+                  (() => {
+                    const raw = parseManualDates(manualText, manualYear)
+                    const out = parseManualDates(manualText, manualYear, manualShiftN, manualShiftUnit)
+                    return raw.length > 0 ? (
+                      <span className="recur-manual-preview">
+                        e.g. {raw[0]} → <strong>{out[0]}</strong>
+                      </span>
+                    ) : null
+                  })()}
               </div>
             </div>
           ) : mode === 'weekly' ? (
