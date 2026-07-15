@@ -1544,12 +1544,26 @@
   }
   .cal-toolbar {
     flex-wrap: wrap;
+    justify-content: center;
     gap: 8px;
   }
   .cal-title {
     order: -1;
     flex-basis: 100%;
     font-size: 16px;
+  }
+  /* Nav (‹ › Today) centered on its own row. */
+  .cal-nav {
+    justify-content: center;
+  }
+  /* View switcher spans the full width as an easy-to-tap segmented control. */
+  .cal-views {
+    flex-basis: 100%;
+    gap: 6px;
+  }
+  .cal-views .cal-btn {
+    flex: 1;
+    padding: 7px 6px;
   }
 
   /* Wide grids (week/month) scroll inside the calendar area, not the page. */
