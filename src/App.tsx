@@ -142,7 +142,11 @@ function App() {
   const queryClient = useQueryClient()
   const calRef = useRef<FullCalendar>(null)
 
-  const [view, setView] = useState<ViewKey>('month')
+  const [view, setView] = useState<ViewKey>(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 600px)').matches
+      ? 'agenda'
+      : 'month'
+  )
   const [focusDate, setFocusDate] = useState<Date>(new Date())
   const [fcTitle, setFcTitle] = useState('')
   const [modal, setModal] = useState<ModalState>({ open: false })
@@ -150,6 +154,9 @@ function App() {
   const [showExport, setShowExport] = useState(false)
   const [showInbox, setShowInbox] = useState(false)
   const [showPush, setShowPush] = useState(false)
+  // Mobile-only: collapse the utility buttons and priority key behind toggles.
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [legendOpen, setLegendOpen] = useState(false)
   const toppedUp = useRef(false)
 
   const { data: tiers } = useQuery({
@@ -687,7 +694,17 @@ function App() {
           <span className="brand-title">Trading Calendar</span>
         </div>
 
-        <div className="legend">
+        <button
+          className="legend-toggle"
+          onClick={() => {
+            setLegendOpen((o) => !o)
+            setMenuOpen(false)
+          }}
+          aria-expanded={legendOpen}
+        >
+          ◐ Key
+        </button>
+        <div className={`legend${legendOpen ? ' open' : ''}`}>
           {legendTiers.map((t) => (
             <span className="legend-item" key={t.id}>
               <span className="legend-dot" style={{ background: t.color }} />
@@ -700,46 +717,75 @@ function App() {
           <button className="btn-primary" onClick={() => setModal({ open: true })}>
             + New event
           </button>
-          <button className="header-btn" onClick={() => setShowInbox(true)}>
-            🔮 Suggestions{tentativeEvents.length ? ` (${tentativeEvents.length})` : ''}
-          </button>
+
           <button
-            className="header-btn"
-            onClick={() => setShowPriorities(true)}
-            disabled={!tiers || tiers.length === 0}
+            className="menu-toggle"
+            onClick={() => {
+              setMenuOpen((o) => !o)
+              setLegendOpen(false)
+            }}
+            aria-expanded={menuOpen}
+            aria-label="More actions"
           >
-            ⚙ Priorities
+            ☰
           </button>
-          <button className="header-btn" onClick={() => setShowPush(true)}>
-            🔔 Notifications
-          </button>
-          <div className="export-wrap">
-            <button
-              className="header-btn"
-              onClick={() => setShowExport((s) => !s)}
-              onBlur={() => setTimeout(() => setShowExport(false), 150)}
-            >
-              ⬇ Export
-            </button>
-            {showExport && (
-              <div className="export-menu">
-                <button className="export-item" onMouseDown={(e) => e.preventDefault()} onClick={() => exportAs('csv')}>
-                  CSV (spreadsheet)
+
+          <div className={`header-menu${menuOpen ? ' open' : ''}`}>
+            {/* On desktop this container is display:contents, so the buttons sit
+                inline in the header exactly as before. On mobile it becomes a
+                dropdown toggled by the ☰ button. */}
+            <div className="header-menu-items" onClick={() => setMenuOpen(false)}>
+              <button className="header-btn" onClick={() => setShowInbox(true)}>
+                🔮 Suggestions{tentativeEvents.length ? ` (${tentativeEvents.length})` : ''}
+              </button>
+              <button
+                className="header-btn"
+                onClick={() => setShowPriorities(true)}
+                disabled={!tiers || tiers.length === 0}
+              >
+                ⚙ Priorities
+              </button>
+              <button className="header-btn" onClick={() => setShowPush(true)}>
+                🔔 Notifications
+              </button>
+              <div className="export-wrap" onClick={(e) => e.stopPropagation()}>
+                <button
+                  className="header-btn"
+                  onClick={() => setShowExport((s) => !s)}
+                  onBlur={() => setTimeout(() => setShowExport(false), 150)}
+                >
+                  ⬇ Export
                 </button>
-                <button className="export-item" onMouseDown={(e) => e.preventDefault()} onClick={() => exportAs('json')}>
-                  JSON (full backup)
-                </button>
+                {showExport && (
+                  <div className="export-menu">
+                    <button className="export-item" onMouseDown={(e) => e.preventDefault()} onClick={() => exportAs('csv')}>
+                      CSV (spreadsheet)
+                    </button>
+                    <button className="export-item" onMouseDown={(e) => e.preventDefault()} onClick={() => exportAs('json')}>
+                      JSON (full backup)
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
+              <button className="theme-toggle" onClick={toggle} aria-label="Toggle light/dark theme">
+                {theme === 'dark' ? '☀ Light' : '☾ Dark'}
+              </button>
+              <button className="signout" onClick={() => supabase.auth.signOut()}>
+                Sign out
+              </button>
+            </div>
           </div>
-          <button className="theme-toggle" onClick={toggle} aria-label="Toggle light/dark theme">
-            {theme === 'dark' ? '☀ Light' : '☾ Dark'}
-          </button>
-          <button className="signout" onClick={() => supabase.auth.signOut()}>
-            Sign out
-          </button>
         </div>
       </header>
+      {(menuOpen || legendOpen) && (
+        <div
+          className="mobile-backdrop"
+          onClick={() => {
+            setMenuOpen(false)
+            setLegendOpen(false)
+          }}
+        />
+      )}
 
       <main className="calendar-wrap">
         <div className="cal-toolbar">

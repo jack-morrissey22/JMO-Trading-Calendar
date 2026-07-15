@@ -475,6 +475,34 @@
   gap: 8px;
   align-items: center;
 }
+/* On desktop the menu wrapper is transparent to layout: its buttons flow inline
+   in the header exactly as before. The ☰ / Key toggles are mobile-only. */
+.header-menu {
+  display: contents;
+}
+.header-menu-items {
+  display: contents;
+}
+.menu-toggle,
+.legend-toggle {
+  display: none;
+  align-items: center;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menu-toggle:hover,
+.legend-toggle:hover {
+  background: var(--hover);
+}
+.mobile-backdrop {
+  display: none;
+}
 .signout {
   background: transparent;
   color: var(--text-dim);
@@ -1415,4 +1443,118 @@
   display: flex;
   gap: 8px;
   margin-left: auto;
+}
+
+/* ============================================================
+   Mobile (phones) — viewing-focused layout.
+   Everything above is unchanged on desktop; these rules only
+   apply at <=600px wide.
+   ============================================================ */
+@media (max-width: 600px) {
+  /* Never let the page itself scroll sideways. Wide content (calendar
+     grids) scrolls inside its own container instead. */
+  .app {
+    overflow-x: hidden;
+  }
+
+  /* ---- Header: compact bar + collapsible menu/key ---- */
+  .app-header {
+    position: relative;
+    z-index: 60;
+    gap: 8px;
+    padding: 8px 10px;
+    flex-wrap: wrap;
+  }
+  .brand-title {
+    display: none; /* keep the "JMO" mark, drop the long title */
+  }
+
+  .menu-toggle,
+  .legend-toggle {
+    display: inline-flex;
+  }
+
+  /* Priority key: hidden until tapped, then a dropdown under the header. */
+  .legend {
+    display: none;
+    margin: 0;
+  }
+  .legend.open {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: absolute;
+    top: 100%;
+    left: 10px;
+    margin-top: 6px;
+    padding: 12px 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+    z-index: 61;
+  }
+
+  /* Utility buttons: hidden until the ☰ button opens them. */
+  .header-menu {
+    display: block;
+    position: relative;
+  }
+  .header-menu-items {
+    display: none;
+  }
+  .header-menu.open .header-menu-items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 6px;
+    min-width: 210px;
+    padding: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+    z-index: 61;
+  }
+  .header-menu.open .header-menu-items > .header-btn,
+  .header-menu.open .header-menu-items > .theme-toggle,
+  .header-menu.open .header-menu-items > .signout,
+  .header-menu.open .header-menu-items .export-wrap,
+  .header-menu.open .header-menu-items .export-wrap > .header-btn {
+    width: 100%;
+    text-align: left;
+    margin-left: 0;
+  }
+
+  /* Backdrop to catch a tap outside either dropdown. */
+  .mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: transparent;
+  }
+
+  /* ---- Calendar toolbar: title on its own line, controls wrap ---- */
+  .calendar-wrap {
+    padding: 8px 10px;
+  }
+  .cal-toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .cal-title {
+    order: -1;
+    flex-basis: 100%;
+    font-size: 16px;
+  }
+
+  /* Wide grids (week/month) scroll inside the calendar area, not the page. */
+  .cal-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
