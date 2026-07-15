@@ -106,15 +106,24 @@ function rowFromInput(input: EventInputData) {
   return { ...rest, extra: { speak: !!speak } }
 }
 
+const PAGE = 1000 // PostgREST caps a single response at 1000 rows — page past it.
+
 export async function fetchEvents(): Promise<EventRow[]> {
-  const { data, error } = await supabase
-    .from('events')
-    .select(
-      'id, title, starts_at, ends_at, all_day, priority_tier_id, category, tags, notes, extra, sound_name, series_id, status',
-    )
-    .order('starts_at')
-  if (error) throw error
-  return (data ?? []).map(mapEventRow)
+  const rows: unknown[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from('events')
+      .select(
+        'id, title, starts_at, ends_at, all_day, priority_tier_id, category, tags, notes, extra, sound_name, series_id, status',
+      )
+      .order('starts_at')
+      .range(from, from + PAGE - 1)
+    if (error) throw error
+    const batch = data ?? []
+    rows.push(...batch)
+    if (batch.length < PAGE) break
+  }
+  return rows.map(mapEventRow)
 }
 
 export async function createEvent(input: EventInputData): Promise<EventRow> {
@@ -207,11 +216,19 @@ export type ReminderDraft = {
 export type ReminderRow = ReminderDraft & { id: string; event_id: string }
 
 export async function fetchReminders(): Promise<ReminderRow[]> {
-  const { data, error } = await supabase
-    .from('reminders')
-    .select('id, event_id, kind, minutes_before, days_before, at_time, channel, email, push')
-  if (error) throw error
-  return (data ?? []) as ReminderRow[]
+  const rows: ReminderRow[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from('reminders')
+      .select('id, event_id, kind, minutes_before, days_before, at_time, channel, email, push')
+      .order('id')
+      .range(from, from + PAGE - 1)
+    if (error) throw error
+    const batch = (data ?? []) as ReminderRow[]
+    rows.push(...batch)
+    if (batch.length < PAGE) break
+  }
+  return rows
 }
 
 /** Replace all reminders for an event with the given set (delete + insert).
