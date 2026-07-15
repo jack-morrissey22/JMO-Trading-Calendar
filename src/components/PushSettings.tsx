@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { enablePush, disablePush, getPushState } from '../lib/push'
+import { useEscClose } from '../lib/useEscClose'
 import type { PushState } from '../lib/push'
 import { fetchPushSubscriptions, deletePushSubscription } from '../lib/api'
 import type { PushSubscriptionRow } from '../lib/api'
@@ -19,6 +20,7 @@ export function PushSettings({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false)
   const [devices, setDevices] = useState<PushSubscriptionRow[]>([])
   const [error, setError] = useState<string | null>(null)
+  useEscClose(onClose, busy)
 
   const refresh = async () => {
     setState(await getPushState())
@@ -78,7 +80,19 @@ export function PushSettings({ onClose }: { onClose: () => void }) {
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal push-modal" onClick={(e) => e.stopPropagation()}>
-        <h2 className="modal-title">🔔 Notifications</h2>
+        <div className="modal-header">
+          <h2 className="modal-title">🔔 Notifications</h2>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            disabled={busy}
+            aria-label="Close"
+            title="Close (Esc)"
+          >
+            ✕
+          </button>
+        </div>
         <p className="modal-hint">
           Get reminders on this device even when the app is closed. Turn it on once per device,
           then flag the reminders you want with 📱 on the event.

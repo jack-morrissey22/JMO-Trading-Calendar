@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { fetchEventSound } from '../lib/api'
+import { useEscClose } from '../lib/useEscClose'
 import type { EventInputData, EventRow, ReminderDraft, SeriesRow } from '../lib/api'
 import type { EventCategory, PriorityTier } from '../types'
 import { PRESETS, labelReminder, relative } from '../lib/reminders'
@@ -120,13 +121,7 @@ export function EventModal({
   const [extendDate, setExtendDate] = useState(() => `${new Date().getFullYear()}-12-31`)
 
   // Esc closes the editor (desktop convenience; mobile uses the ✕ in the header).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !busy) onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [busy, onClose])
+  useEscClose(onClose, busy)
 
   const [title, setTitle] = useState(event?.title ?? '')
   const [allDay, setAllDay] = useState(event?.all_day ?? false)

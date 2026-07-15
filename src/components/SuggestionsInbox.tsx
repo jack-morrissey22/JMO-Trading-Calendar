@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from 'react'
 import type { EventRow } from '../lib/api'
+import { useEscClose } from '../lib/useEscClose'
 
 const monthKeyOf = (iso: string) => {
   const d = new Date(iso)
@@ -48,6 +49,7 @@ export function SuggestionsInbox({
   const [query, setQuery] = useState('')
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
+  useEscClose(onClose, busy)
 
   // Distinct event names / categories present in the inbox, for the quick-picks.
   const names = useMemo(
@@ -83,7 +85,19 @@ export function SuggestionsInbox({
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal inbox" onClick={(e) => e.stopPropagation()}>
-        <h2 className="modal-title">🔮 Suggestions</h2>
+        <div className="modal-header">
+          <h2 className="modal-title">🔮 Suggestions</h2>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            disabled={busy}
+            aria-label="Close"
+            title="Close (Esc)"
+          >
+            ✕
+          </button>
+        </div>
         <p className="modal-hint">
           Projected occurrences awaiting your check. Confirm, adjust the date, or skip.
         </p>

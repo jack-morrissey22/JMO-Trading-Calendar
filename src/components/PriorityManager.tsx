@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import type { PriorityTier } from '../types'
+import { useEscClose } from '../lib/useEscClose'
 
 export type TierDraft = { id?: string; name: string; color: string }
 
@@ -22,6 +23,7 @@ export function PriorityManager({ tiers, busy, onSave, onClose }: Props) {
   )
   const [deleted, setDeleted] = useState<string[]>([])
   const nextKey = useRef(0)
+  useEscClose(onClose, busy)
 
   const patch = (key: string, p: Partial<Row>) =>
     setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...p } : r)))
@@ -55,7 +57,19 @@ export function PriorityManager({ tiers, busy, onSave, onClose }: Props) {
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2 className="modal-title">Priority levels</h2>
+        <div className="modal-header">
+          <h2 className="modal-title">Priority levels</h2>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            disabled={busy}
+            aria-label="Close"
+            title="Close (Esc)"
+          >
+            ✕
+          </button>
+        </div>
         <p className="modal-hint">Top of the list = highest priority. Colours show on the calendar.</p>
 
         <div className="tier-list">

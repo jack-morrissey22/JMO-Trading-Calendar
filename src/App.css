@@ -1352,9 +1352,10 @@
   margin: 0 0 4px;
   color: var(--text);
 }
-/* Event editor header: sticks to the top of the scrolling modal so the close
-   button stays reachable however far down you have scrolled. Negative margins
-   let it span the modal's padding and sit flush with the rounded top corners. */
+/* Modal header (event editor + Suggestions / Notifications / Priorities):
+   sticks to the top of the scrolling modal so the close button stays reachable
+   however far down you have scrolled. Negative margins let it span the modal's
+   padding and sit flush with the rounded top corners. */
 .modal-header {
   position: sticky;
   top: 0;
