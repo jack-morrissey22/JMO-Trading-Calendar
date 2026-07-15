@@ -1500,6 +1500,16 @@
     overflow-x: hidden;
   }
 
+  /* iOS Safari auto-zooms when you focus a form field smaller than 16px (e.g.
+     the auto-focused Title when you open an event) and leaves the page zoomed.
+     Force every field to 16px on phones so it never zooms. !important beats the
+     more specific per-field rules (e.g. .field input) without enumerating them. */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
   /* ---- Header: compact bar + collapsible menu/key ---- */
   .app-header {
     position: relative;
