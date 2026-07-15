@@ -1352,6 +1352,48 @@
   margin: 0 0 4px;
   color: var(--text);
 }
+/* Event editor header: sticks to the top of the scrolling modal so the close
+   button stays reachable however far down you have scrolled. Negative margins
+   let it span the modal's padding and sit flush with the rounded top corners. */
+.modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -22px -22px 0;
+  padding: 18px 22px 10px;
+  background: var(--panel);
+  border-radius: 12px 12px 0 0;
+}
+.modal-header .modal-title {
+  margin: 0;
+}
+.modal-close {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.modal-close:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.modal-close:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .field {
   display: flex;
   flex-direction: column;

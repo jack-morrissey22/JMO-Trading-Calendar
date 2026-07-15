@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { fetchEventSound } from '../lib/api'
 import type { EventInputData, EventRow, ReminderDraft, SeriesRow } from '../lib/api'
@@ -118,6 +118,15 @@ export function EventModal({
   const [showSuggest, setShowSuggest] = useState(false)
   const [recurrence, setRecurrence] = useState<RecurrenceValue | null>(null)
   const [extendDate, setExtendDate] = useState(() => `${new Date().getFullYear()}-12-31`)
+
+  // Esc closes the editor (desktop convenience; mobile uses the ✕ in the header).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !busy) onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [busy, onClose])
 
   const [title, setTitle] = useState(event?.title ?? '')
   const [allDay, setAllDay] = useState(event?.all_day ?? false)
@@ -291,7 +300,19 @@ export function EventModal({
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={onSubmit}>
-        <h2 className="modal-title">{editing ? 'Edit event' : 'New event'}</h2>
+        <div className="modal-header">
+          <h2 className="modal-title">{editing ? 'Edit event' : 'New event'}</h2>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            disabled={busy}
+            aria-label="Close editor"
+            title="Close (Esc)"
+          >
+            ✕
+          </button>
+        </div>
 
         <div className="field title-field">
           Title
