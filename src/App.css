@@ -1339,7 +1339,10 @@
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 22px 22px 18px;
+  /* No top padding: every modal starts with a .modal-header that supplies its
+     own top padding, which keeps the sticky header flush without a negative
+     top margin (a negative top margin shrinks flex flow and clips the next row). */
+  padding: 0 22px 18px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1364,8 +1367,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin: -22px -22px 0;
-  padding: 18px 22px 10px;
+  /* Full-bleed across the modal's side padding; supplies the modal's top
+     padding (no negative top margin, so the next row is never clipped). */
+  margin: 0 -22px 0;
+  padding: 22px 22px 12px;
   background: var(--panel);
   border-radius: 12px 12px 0 0;
 }
