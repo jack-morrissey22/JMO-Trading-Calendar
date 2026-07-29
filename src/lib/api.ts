@@ -486,6 +486,7 @@ export async function projectSeries(
         at_time: r.at_time,
         channel: r.channel,
         email: r.email,
+        push: r.push,
         fire_at: reminderFireTime(r, { starts_at: ev.starts_at } as EventRow).toISOString(),
         sent_at: null,
       })),
