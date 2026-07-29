@@ -91,9 +91,14 @@ function dayInMonth(y: number, m: number, rule: DayRule): Date | null {
     case 'nth_weekday':
       return nthWeekdayOfMonth(y, m, rule.nth, rule.weekday)
     case 'day_of_month': {
+      // 'nearest' clamps to month-end for short months, so e.g. the 30th in
+      // February lands on February's last working day rather than being dropped.
+      if (rule.roll === 'nearest') {
+        const lastDay = new Date(y, m + 1, 0).getDate()
+        return nearestWeekdayInMonth(new Date(y, m, Math.min(rule.day, lastDay)), m)
+      }
       const d = new Date(y, m, rule.day)
       if (d.getMonth() !== m) return null
-      if (rule.roll === 'nearest') return nearestWeekdayInMonth(d, m)
       return rollWeekend(d, rule.roll)
     }
     case 'nth_bizday':
