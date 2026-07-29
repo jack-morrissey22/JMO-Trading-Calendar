@@ -1,5 +1,7 @@
 import type { EventRow, ReminderDraft } from './api'
 
+// Newly-added reminders default to push ON (📱) so phone notifications are the
+// blanket default; email stays opt-in, and push can be toggled off per reminder.
 export function relative(minutes: number): ReminderDraft {
   return {
     kind: 'relative',
@@ -8,7 +10,7 @@ export function relative(minutes: number): ReminderDraft {
     at_time: null,
     channel: 'inapp',
     email: false,
-    push: false,
+    push: true,
   }
 }
 export function fixed(daysBefore: number, atTime: string): ReminderDraft {
@@ -19,7 +21,7 @@ export function fixed(daysBefore: number, atTime: string): ReminderDraft {
     at_time: atTime,
     channel: 'inapp',
     email: false,
-    push: false,
+    push: true,
   }
 }
 
