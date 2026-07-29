@@ -5,7 +5,7 @@
 
 export type DayRule =
   | { type: 'nth_weekday'; nth: number; weekday: number } // nth: 1..4, or -1 = last. weekday 0=Sun..6=Sat
-  | { type: 'day_of_month'; day: number; roll: 'next' | 'prev' | 'none' } // roll weekend to a weekday
+  | { type: 'day_of_month'; day: number; roll: 'next' | 'prev' | 'none' | 'nearest' } // roll weekend to a weekday ('nearest' stays inside the month)
   | { type: 'nth_bizday'; nth: number } // Nth business day counting FROM the start (1 = 1st weekday)
   | { type: 'nth_last_bizday'; nth: number } // 1 = last weekday, 2 = 2nd-last, …
   | { type: 'offset_snap'; day: number; offsetDays: number } // anchor day-of-month ± offset, snap to nearest weekday
@@ -72,6 +72,20 @@ function snapWeekday(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + delta)
 }
 
+// Nearest weekday to `d`, but never crossing out of month `m`. Sat -> Fri and
+// Sun -> Mon; if that snap would leave the month (e.g. Sun the 30th of a 30-day
+// month, whose Monday is the 1st of next month), snap the other way instead so
+// it never spills past month-end (that Sunday lands on the previous Friday).
+function nearestWeekdayInMonth(d: Date, m: number): Date {
+  if (!isWeekend(d)) return d
+  const snapped = snapWeekday(d)
+  if (snapped.getMonth() === m) return snapped
+  const step = d.getDay() === 6 ? 1 : -1 // opposite of the snap direction
+  let r = new Date(d.getFullYear(), d.getMonth(), d.getDate() + step)
+  while (isWeekend(r)) r = new Date(r.getFullYear(), r.getMonth(), r.getDate() + step)
+  return r
+}
+
 function dayInMonth(y: number, m: number, rule: DayRule): Date | null {
   switch (rule.type) {
     case 'nth_weekday':
@@ -79,6 +93,7 @@ function dayInMonth(y: number, m: number, rule: DayRule): Date | null {
     case 'day_of_month': {
       const d = new Date(y, m, rule.day)
       if (d.getMonth() !== m) return null
+      if (rule.roll === 'nearest') return nearestWeekdayInMonth(d, m)
       return rollWeekend(d, rule.roll)
     }
     case 'nth_bizday':
@@ -193,9 +208,18 @@ export function describeRule(rule: RecurrenceRule): string {
     case 'nth_weekday':
       day = `the ${ord(d.nth)} ${WEEKDAY_NAMES[d.weekday]}`
       break
-    case 'day_of_month':
-      day = `the ${d.day}${d.roll !== 'none' ? ` (roll to ${d.roll === 'next' ? 'next' : 'previous'} weekday)` : ''}`
+    case 'day_of_month': {
+      const rollTxt =
+        d.roll === 'next'
+          ? ' (roll to next weekday)'
+          : d.roll === 'prev'
+            ? ' (roll to previous weekday)'
+            : d.roll === 'nearest'
+              ? ' (roll to nearest weekday, within the month)'
+              : ''
+      day = `the ${d.day}${rollTxt}`
       break
+    }
     case 'nth_bizday':
       day = `the ${ordinalDay(d.nth)} business day`
       break

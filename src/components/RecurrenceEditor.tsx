@@ -29,7 +29,7 @@ function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
     nth: Math.ceil(seed.getDate() / 7), // which occurrence in the month the seed is (1st/2nd/…)
     weekday: seed.getDay(),
     dayOfMonth: seed.getDate(),
-    roll: 'next' as 'next' | 'prev' | 'none',
+    roll: 'next' as 'next' | 'prev' | 'none' | 'nearest',
     nthBiz: 10, // Nth business day from the start (default 10)
     nthLast: 1,
     offsetDay: 25,
@@ -189,7 +189,7 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
   const [nth, setNth] = useState(D.nth)
   const [weekday, setWeekday] = useState(D.weekday)
   const [dayOfMonth, setDayOfMonth] = useState(D.dayOfMonth)
-  const [roll, setRoll] = useState<'next' | 'prev' | 'none'>(D.roll)
+  const [roll, setRoll] = useState<'next' | 'prev' | 'none' | 'nearest'>(D.roll)
   const [nthBiz, setNthBiz] = useState(D.nthBiz)
   const [nthLast, setNthLast] = useState(D.nthLast)
   const [offsetDay, setOffsetDay] = useState(D.offsetDay)
@@ -468,6 +468,7 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
                     <select value={roll} onChange={(e) => setRoll(e.target.value as typeof roll)}>
                       <option value="next">→ next weekday if weekend</option>
                       <option value="prev">→ prev weekday if weekend</option>
+                      <option value="nearest">→ nearest weekday (stay in month)</option>
                       <option value="none">keep as-is</option>
                     </select>
                   </>
