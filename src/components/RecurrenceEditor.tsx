@@ -110,11 +110,6 @@ const NTHS = [
   { v: 4, l: '4th' },
   { v: -1, l: 'last' },
 ]
-const NTH_LAST = [
-  { v: 1, l: 'last' },
-  { v: 2, l: '2nd-last' },
-  { v: 3, l: '3rd-last' },
-]
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(
   (l, i) => ({ v: i + 1, l }),
 )
@@ -491,13 +486,17 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
                   </>
                 )}
                 {dayType === 'nth_last_bizday' && (
-                  <select value={nthLast} onChange={(e) => setNthLast(Number(e.target.value))}>
-                    {NTH_LAST.map((n) => (
-                      <option key={n.v} value={n.v}>
-                        {n.l} business day
-                      </option>
-                    ))}
-                  </select>
+                  <>
+                    <span>the</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={23}
+                      value={nthLast}
+                      onChange={(e) => setNthLast(Number(e.target.value))}
+                    />
+                    <span>{ordinalSuffix(nthLast)}-last business day (from month end)</span>
+                  </>
                 )}
                 {dayType === 'bizdays_before_dom' && (
                   <>
