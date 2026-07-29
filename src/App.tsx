@@ -29,6 +29,8 @@ import {
   fetchPriorityTiers,
   fetchReminders,
   fetchSeries,
+  fetchViewFilters,
+  saveViewFilters,
   projectSeries,
   setEventReminders,
   setEventSeriesId,
@@ -41,7 +43,9 @@ import {
   updatePriorityTier,
   updateSeries,
 } from './lib/api'
-import type { EventInputData, EventRow, ReminderDraft, SeriesInput } from './lib/api'
+import type { EventInputData, EventRow, ReminderDraft, SeriesInput, ViewFilters } from './lib/api'
+import { EMPTY_FILTERS } from './lib/api'
+import { FiltersModal } from './components/FiltersModal'
 import type { SoundChange } from './components/EventModal'
 import type { RecurrenceValue } from './components/RecurrenceEditor'
 import { isWindow } from './lib/events'
@@ -154,6 +158,7 @@ function App() {
   const [showExport, setShowExport] = useState(false)
   const [showInbox, setShowInbox] = useState(false)
   const [showPush, setShowPush] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
   // Mobile-only: collapse the utility buttons and priority key behind toggles.
   const [menuOpen, setMenuOpen] = useState(false)
   const [legendOpen, setLegendOpen] = useState(false)
@@ -183,6 +188,24 @@ function App() {
     enabled: !!session,
   })
 
+  const { data: viewFilters } = useQuery({
+    queryKey: ['view_filters'],
+    queryFn: fetchViewFilters,
+    enabled: !!session,
+  })
+  const filters = viewFilters ?? EMPTY_FILTERS
+
+  // Persist filter changes (synced across devices); update the cache immediately.
+  const saveFiltersMut = useMutation({
+    mutationFn: saveViewFilters,
+    onMutate: (next: ViewFilters) => {
+      queryClient.setQueryData(['view_filters'], next)
+    },
+    onError: () => queryClient.invalidateQueries({ queryKey: ['view_filters'] }),
+  })
+  const setFilters = (next: ViewFilters) => saveFiltersMut.mutate(next)
+  const filtersActive = filters.hidden_priority_ids.length + filters.hidden_categories.length > 0
+
   const legendTiers = tiers && tiers.length ? tiers : PRIORITY_TIERS
 
   // Skipped projections are hidden everywhere; tentative ones show but styled.
@@ -205,6 +228,23 @@ function App() {
     () => [...new Set((events ?? []).map((e) => e.category).filter(Boolean))].sort(),
     [events],
   )
+  const hasUncategorised = useMemo(
+    () => visibleEvents.some((e) => !e.category),
+    [visibleEvents],
+  )
+
+  // Month & Week honour the priority/category filters; Day & Agenda always show
+  // everything (visibleEvents). Filters are stored as exclusions.
+  const filteredEvents = useMemo(() => {
+    if (!filtersActive) return visibleEvents
+    const hp = new Set(filters.hidden_priority_ids)
+    const hc = new Set(filters.hidden_categories)
+    return visibleEvents.filter((e) => {
+      if (e.priority_tier_id && hp.has(e.priority_tier_id)) return false
+      if (hc.has(e.category || '')) return false
+      return true
+    })
+  }, [visibleEvents, filters, filtersActive])
 
   // Once per session, top up each series so at least the horizon stays populated
   // as dates pass. Never projects before a series' own start date.
@@ -235,7 +275,7 @@ function App() {
 
   const fcEvents: EventInput[] = useMemo(
     () =>
-      visibleEvents.map((e) => {
+      filteredEvents.map((e) => {
         const color = colorOf(e.priority_tier_id)
         const window = isWindow(e)
         const tentative = e.status === 'tentative'
@@ -259,7 +299,7 @@ function App() {
           classNames,
         }
       }),
-    [visibleEvents, colorOf],
+    [filteredEvents, colorOf],
   )
 
   // Cyclical memory: the most recent entry per event title, with its reminders,
@@ -739,6 +779,12 @@ function App() {
                 🔮 Suggestions{tentativeEvents.length ? ` (${tentativeEvents.length})` : ''}
               </button>
               <button
+                className={`header-btn${filtersActive ? ' filter-on' : ''}`}
+                onClick={() => setShowFilters(true)}
+              >
+                🔎 Filter{filtersActive ? ` (${filters.hidden_priority_ids.length + filters.hidden_categories.length})` : ''}
+              </button>
+              <button
                 className="header-btn"
                 onClick={() => setShowPriorities(true)}
                 disabled={!tiers || tiers.length === 0}
@@ -814,6 +860,18 @@ function App() {
           </div>
         </div>
 
+        {filtersActive && (view === 'month' || view === 'week') && (
+          <div className="filter-banner">
+            <span className="filter-banner-text">🔎 Filtered view — some events hidden here</span>
+            <button type="button" className="filter-link" onClick={() => setShowFilters(true)}>
+              Edit
+            </button>
+            <button type="button" className="filter-link" onClick={() => setFilters(EMPTY_FILTERS)}>
+              Clear
+            </button>
+          </div>
+        )}
+
         <div className="cal-scroll">
           {view === 'day' ? (
             <DayView
@@ -826,7 +884,7 @@ function App() {
           ) : view === 'week' ? (
             <WeekView
               weekStart={startOfWeek(focusDate)}
-              events={visibleEvents}
+              events={filteredEvents}
               colorOf={colorOf}
               onEventClick={openEdit}
               onSlotClick={openCreateAt}
@@ -962,6 +1020,17 @@ function App() {
       )}
 
       {showPush && <PushSettings onClose={() => setShowPush(false)} />}
+
+      {showFilters && (
+        <FiltersModal
+          tiers={legendTiers}
+          categories={categoryOptions}
+          hasUncategorised={hasUncategorised}
+          filters={filters}
+          onChange={setFilters}
+          onClose={() => setShowFilters(false)}
+        />
+      )}
     </div>
   )
 }

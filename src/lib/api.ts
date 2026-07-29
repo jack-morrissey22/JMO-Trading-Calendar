@@ -303,6 +303,44 @@ export async function fetchPushSubscriptions(): Promise<PushSubscriptionRow[]> {
 }
 
 // ---------------------------------------------------------------------------
+// View filters (per-user, synced): which priorities / categories to hide in
+// Month & Week. Stored as exclusions so new categories show by default.
+// ---------------------------------------------------------------------------
+
+export type ViewFilters = {
+  hidden_priority_ids: string[]
+  /** Category names to hide; "" hides uncategorised events. */
+  hidden_categories: string[]
+}
+
+export const EMPTY_FILTERS: ViewFilters = { hidden_priority_ids: [], hidden_categories: [] }
+
+export async function fetchViewFilters(): Promise<ViewFilters> {
+  const { data: userRes } = await supabase.auth.getUser()
+  const id = userRes.user?.id
+  if (!id) return EMPTY_FILTERS
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('view_filters')
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  const f = (data?.view_filters ?? {}) as Partial<ViewFilters>
+  return {
+    hidden_priority_ids: Array.isArray(f.hidden_priority_ids) ? f.hidden_priority_ids : [],
+    hidden_categories: Array.isArray(f.hidden_categories) ? f.hidden_categories : [],
+  }
+}
+
+export async function saveViewFilters(filters: ViewFilters): Promise<void> {
+  const { data: userRes } = await supabase.auth.getUser()
+  const id = userRes.user?.id
+  if (!id) return
+  const { error } = await supabase.from('profiles').update({ view_filters: filters }).eq('id', id)
+  if (error) throw error
+}
+
+// ---------------------------------------------------------------------------
 // Series (recurring templates) + projection
 // ---------------------------------------------------------------------------
 
