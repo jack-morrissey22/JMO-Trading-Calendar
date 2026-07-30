@@ -51,7 +51,7 @@ import { FindModal } from './components/FindModal'
 import type { SoundChange } from './components/EventModal'
 import type { RecurrenceValue } from './components/RecurrenceEditor'
 import { isWindow } from './lib/events'
-import { zonedIso, partsInZone } from './lib/tz'
+import { zonedIso, partsInZone, HOME_TZ } from './lib/tz'
 import type { RecurrenceRule } from './lib/recurrence'
 import { buildCsv, buildJson, downloadFile } from './lib/export'
 import { PRIORITY_TIERS } from './data'
@@ -407,7 +407,7 @@ function App() {
         const start = new Date(input.starts_at)
         const time_of_day = input.all_day
           ? null
-          : `${pad(start.getHours())}:${pad(start.getMinutes())}:00`
+          : `${partsInZone(input.starts_at, input.tz ?? HOME_TZ).time}:00`
         const window_days =
           input.all_day && input.ends_at
             ? Math.max(1, Math.round((new Date(input.ends_at).getTime() - start.getTime()) / 86_400_000))
@@ -434,6 +434,7 @@ function App() {
           sound_data: sound?.data ?? null,
           sound_name: sound?.name ?? null,
           notes: null,
+          tz: input.tz ?? null,
         })
         await setEventSeriesId(eventId, s.id)
         const ownSeed = [{ starts_at: input.starts_at, status: 'confirmed' } as EventRow]
@@ -513,9 +514,10 @@ function App() {
       const cutoff = dayStart(fromEvent.starts_at).getTime()
 
       const allDay = input.all_day
-      // Work in the home timezone so time_of_day and the rebuilt occurrences
-      // match how buildPayload / projection write instants, on any device.
-      const { time: hhmm } = partsInZone(input.starts_at)
+      // Work in the event's own timezone so time_of_day and the rebuilt
+      // occurrences match how buildPayload / projection write instants.
+      const evTz = input.tz ?? HOME_TZ
+      const { time: hhmm } = partsInZone(input.starts_at, evTz)
       const [hh, mm] = hhmm.split(':').map(Number)
       const timeOfDay = allDay ? null : `${hhmm}:00`
       const windowDays =
@@ -539,6 +541,7 @@ function App() {
         tags: input.tags,
         speak: input.speak,
         reminders: rem,
+        tz: input.tz ?? null,
         ...(sound !== undefined ? { sound_data: sound.data, sound_name: sound.name } : {}),
       })
 
@@ -553,11 +556,12 @@ function App() {
           day.getDate(),
           allDay ? 0 : hh,
           allDay ? 0 : mm,
+          evTz,
         )
         const endDay = new Date(day.getFullYear(), day.getMonth(), day.getDate() + windowDays)
         const endsAt =
           allDay && windowDays
-            ? zonedIso(endDay.getFullYear(), endDay.getMonth() + 1, endDay.getDate(), 0, 0)
+            ? zonedIso(endDay.getFullYear(), endDay.getMonth() + 1, endDay.getDate(), 0, 0, evTz)
             : null
         const evInput: EventInputData = {
           title: input.title,
@@ -569,6 +573,7 @@ function App() {
           tags: input.tags,
           notes: isEdited ? input.notes : e.notes,
           speak: input.speak,
+          tz: input.tz ?? null,
         }
         await updateEvent(e.id, evInput)
         await setEventReminders(e.id, rem, startsAt)

@@ -1693,6 +1693,13 @@
   background: #ef4444;
 }
 
+/* Event editor timezone field */
+.tz-hint {
+  color: var(--text-dim);
+  font-weight: 400;
+  font-size: 11.5px;
+}
+
 /* ============================================================
    Mobile (phones) — viewing-focused layout.
    Everything above is unchanged on desktop; these rules only

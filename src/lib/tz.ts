@@ -7,6 +7,27 @@ import { DateTime } from 'luxon'
 // that overrides this default.
 export const HOME_TZ = 'Europe/Dublin'
 
+// Curated market timezones offered in the editor. `null`/absent tz means HOME_TZ.
+export const MARKET_TZS: { value: string; label: string }[] = [
+  { value: 'Europe/Dublin', label: 'Ireland / UK' },
+  { value: 'America/New_York', label: 'US Eastern' },
+  { value: 'America/Chicago', label: 'US Central' },
+  { value: 'Europe/Berlin', label: 'Central Europe' },
+  { value: 'Asia/Tokyo', label: 'Japan' },
+  { value: 'Asia/Singapore', label: 'Singapore' },
+]
+export const tzLabel = (tz: string | null | undefined): string =>
+  MARKET_TZS.find((t) => t.value === (tz || HOME_TZ))?.label ?? (tz || HOME_TZ)
+
+// Re-express a wall-clock "HH:MM" from one zone to another on a normal-offset
+// reference date (mid-summer, both zones on the same DST phase) — used when
+// migrating an event's zone so 13:30 Ireland becomes 08:30 US Eastern.
+export function convertClock(timeHHMM: string, fromTz: string, toTz: string): string {
+  const [h, mi] = timeHHMM.split(':').map(Number)
+  const ref = DateTime.fromObject({ year: 2026, month: 7, day: 1, hour: h, minute: mi }, { zone: fromTz })
+  return ref.setZone(toTz).toFormat('HH:mm')
+}
+
 // Wall-clock date+time in `tz` -> absolute instant as a UTC ISO string
 // (…Z form, identical shape to Date#toISOString). e.g. zonedIso(2026,3,15,8,30,
 // 'America/New_York') is US-Eastern 08:30 that day, as the correct UTC moment.

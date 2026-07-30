@@ -68,6 +68,8 @@ export type EventRow = {
   /** Recurring-series link + lifecycle. status: confirmed | tentative | skipped. */
   series_id: string | null
   status: string
+  /** Market timezone the time is defined in (null = home timezone). */
+  tz: string | null
 }
 
 export type EventInputData = {
@@ -80,6 +82,7 @@ export type EventInputData = {
   tags: string[]
   notes?: string | null
   speak: boolean
+  tz?: string | null
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -98,6 +101,7 @@ function mapEventRow(r: any): EventRow {
     sound_name: r.sound_name ?? null,
     series_id: r.series_id ?? null,
     status: r.status ?? 'confirmed',
+    tz: r.tz ?? null,
   }
 }
 
@@ -115,7 +119,7 @@ export async function fetchEvents(): Promise<EventRow[]> {
     const { data, error } = await supabase
       .from('events')
       .select(
-        'id, title, starts_at, ends_at, all_day, priority_tier_id, category, tags, notes, extra, sound_name, series_id, status',
+        'id, title, starts_at, ends_at, all_day, priority_tier_id, category, tags, notes, extra, sound_name, series_id, status, tz',
       )
       .order('starts_at')
       .range(from, from + PAGE - 1)
@@ -376,6 +380,7 @@ export type SeriesRow = {
   sound_data: string | null // inline base64 clip; every occurrence inherits it
   sound_name: string | null // filename / "has a custom sound" flag
   notes: string | null // optional series-wide note; new occurrences inherit it
+  tz: string | null // market timezone the time_of_day is defined in (null = home)
 }
 
 export type SeriesInput = Omit<SeriesRow, 'id'>
@@ -384,7 +389,7 @@ export async function fetchSeries(): Promise<SeriesRow[]> {
   const { data, error } = await supabase
     .from('series')
     .select(
-      'id, title, time_of_day, all_day, window_days, priority_tier_id, category, tags, speak, reminders, rule, horizon_months, active, sound_data, sound_name, notes',
+      'id, title, time_of_day, all_day, window_days, priority_tier_id, category, tags, speak, reminders, rule, horizon_months, active, sound_data, sound_name, notes, tz',
     )
   if (error) throw error
   return (data ?? []) as SeriesRow[]
@@ -478,9 +483,10 @@ function startsAtFor(series: SeriesRow, d: Date): string {
   const y = d.getFullYear()
   const mo = d.getMonth() + 1
   const day = d.getDate()
-  if (series.all_day) return zonedIso(y, mo, day, 0, 0)
+  const tz = series.tz ?? undefined
+  if (series.all_day) return zonedIso(y, mo, day, 0, 0, tz)
   const [hh, mm] = (series.time_of_day ?? '00:00').split(':').map(Number)
-  return zonedIso(y, mo, day, hh, mm)
+  return zonedIso(y, mo, day, hh, mm, tz)
 }
 
 /** Materialise tentative occurrences of a series within [from, to] that don't
@@ -519,6 +525,7 @@ export async function projectSeries(
     extra: { speak: series.speak },
     sound_data: series.sound_data,
     sound_name: series.sound_name,
+    tz: series.tz ?? null,
   }))
 
   const { data: inserted, error } = await supabase

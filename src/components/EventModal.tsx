@@ -5,7 +5,7 @@ import { useEscClose } from '../lib/useEscClose'
 import type { EventInputData, EventRow, ReminderDraft, SeriesRow } from '../lib/api'
 import type { EventCategory, PriorityTier } from '../types'
 import { PRESETS, labelReminder, relative } from '../lib/reminders'
-import { zonedIsoFromParts, partsInZone } from '../lib/tz'
+import { zonedIsoFromParts, partsInZone, HOME_TZ, MARKET_TZS } from '../lib/tz'
 import { playClip } from '../lib/sound'
 import { RecurrenceEditor } from './RecurrenceEditor'
 import type { RecurrenceValue } from './RecurrenceEditor'
@@ -39,11 +39,6 @@ const CUSTOM_UNITS: { label: string; mult: number }[] = [
 ]
 
 
-// Read an instant into the form in the home timezone, matching how buildPayload
-// writes it back — so editing is device-independent.
-function toLocalParts(iso: string) {
-  return partsInZone(iso)
-}
 
 export type EventModalProps = {
   tiers: PriorityTier[]
@@ -113,7 +108,9 @@ export function EventModal({
   onClose,
 }: EventModalProps) {
   const editing = !!event
-  const existingParts = event ? toLocalParts(event.starts_at) : null
+  // Read the event's stored instant back into the form in the event's own zone.
+  const evTz = event?.tz ?? HOME_TZ
+  const existingParts = event ? partsInZone(event.starts_at, evTz) : null
   const [showSuggest, setShowSuggest] = useState(false)
   const [recurrence, setRecurrence] = useState<RecurrenceValue | null>(null)
   const [extendDate, setExtendDate] = useState(() => `${new Date().getFullYear()}-12-31`)
@@ -125,7 +122,8 @@ export function EventModal({
   const [allDay, setAllDay] = useState(event?.all_day ?? false)
   const [date, setDate] = useState(existingParts?.date ?? initialDate ?? '')
   const [time, setTime] = useState(existingParts?.time ?? initialTime ?? '13:30')
-  const [endDate, setEndDate] = useState(event?.ends_at ? toLocalParts(event.ends_at).date : '')
+  const [endDate, setEndDate] = useState(event?.ends_at ? partsInZone(event.ends_at, evTz).date : '')
+  const [tz, setTz] = useState<string>(event?.tz ?? HOME_TZ)
   const [priorityId, setPriorityId] = useState(
     event?.priority_tier_id ?? tiers[0]?.id ?? '',
   )
@@ -240,11 +238,11 @@ export function EventModal({
   function buildPayload(): { input: EventInputData; sound: SoundChange } | null {
     if (!date || !title) return null
     const starts_at = allDay
-      ? zonedIsoFromParts(date, '00:00')
-      : zonedIsoFromParts(date, time)
+      ? zonedIsoFromParts(date, '00:00', tz)
+      : zonedIsoFromParts(date, time, tz)
     // A window is an all-day event with an end date after the start date.
     const ends_at =
-      allDay && endDate && endDate > date ? zonedIsoFromParts(endDate, '00:00') : null
+      allDay && endDate && endDate > date ? zonedIsoFromParts(endDate, '00:00', tz) : null
     const input: EventInputData = {
       title: title.trim(),
       starts_at,
@@ -258,6 +256,7 @@ export function EventModal({
         .filter(Boolean),
       notes: notes.trim() || null,
       speak,
+      tz,
     }
     const sound: SoundChange = soundChanged ? { data: soundData, name: soundName } : undefined
     return { input, sound }
@@ -374,6 +373,18 @@ export function EventModal({
             </label>
           )}
         </div>
+        {!allDay && (
+          <label className="field tz-field">
+            Timezone <span className="tz-hint">— the market this time is defined in</span>
+            <select value={tz} onChange={(e) => setTz(e.target.value)}>
+              {MARKET_TZS.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         {allDay && (
           <p className="modal-hint">
             Set an end date to make this a multi-day <strong>window</strong> (e.g. a roll period
