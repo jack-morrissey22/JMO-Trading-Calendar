@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { reminderFireTime } from './reminders'
+import { zonedIso } from './tz'
 import { computeOccurrences } from './recurrence'
 import type { RecurrenceRule } from './recurrence'
 import type { PriorityTier } from '../types'
@@ -474,9 +475,12 @@ const pad2 = (n: number) => String(n).padStart(2, '0')
 const ymd = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 
 function startsAtFor(series: SeriesRow, d: Date): string {
-  if (series.all_day) return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0).toISOString()
+  const y = d.getFullYear()
+  const mo = d.getMonth() + 1
+  const day = d.getDate()
+  if (series.all_day) return zonedIso(y, mo, day, 0, 0)
   const [hh, mm] = (series.time_of_day ?? '00:00').split(':').map(Number)
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh, mm, 0).toISOString()
+  return zonedIso(y, mo, day, hh, mm)
 }
 
 /** Materialise tentative occurrences of a series within [from, to] that don't

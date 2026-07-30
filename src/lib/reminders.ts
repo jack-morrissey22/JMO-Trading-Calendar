@@ -1,4 +1,5 @@
 import type { EventRow, ReminderDraft } from './api'
+import { fixedFireDate } from './tz'
 
 // Newly-added reminders default to push ON (📱) so phone notifications are the
 // blanket default; email stays opt-in, and push can be toggled off per reminder.
@@ -52,15 +53,13 @@ export function labelReminder(r: ReminderDraft): string {
   return `${d} days before (${t})`
 }
 
-/** When this reminder should fire, given its event, in local time. */
+/** When this reminder should fire, given its event. Relative offsets are
+ *  absolute (timezone-independent); fixed "N days before at HH:MM" reminders
+ *  resolve the HH:MM in the home timezone so they don't drift with the device. */
 export function reminderFireTime(r: ReminderDraft, event: EventRow): Date {
   const start = new Date(event.starts_at)
   if (r.kind === 'relative') {
     return new Date(start.getTime() - (r.minutes_before ?? 0) * 60000)
   }
-  const day = new Date(start)
-  day.setDate(day.getDate() - (r.days_before ?? 0))
-  const [hh, mm] = (r.at_time ?? '09:00').split(':').map(Number)
-  day.setHours(hh, mm, 0, 0)
-  return day
+  return fixedFireDate(event.starts_at, r.days_before ?? 0, r.at_time ?? '09:00')
 }

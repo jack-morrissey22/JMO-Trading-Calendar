@@ -51,6 +51,7 @@ import { FindModal } from './components/FindModal'
 import type { SoundChange } from './components/EventModal'
 import type { RecurrenceValue } from './components/RecurrenceEditor'
 import { isWindow } from './lib/events'
+import { zonedIso, partsInZone } from './lib/tz'
 import type { RecurrenceRule } from './lib/recurrence'
 import { buildCsv, buildJson, downloadFile } from './lib/export'
 import { PRIORITY_TIERS } from './data'
@@ -512,10 +513,11 @@ function App() {
       const cutoff = dayStart(fromEvent.starts_at).getTime()
 
       const allDay = input.all_day
-      const editStart = new Date(input.starts_at)
-      const hh = editStart.getHours()
-      const mm = editStart.getMinutes()
-      const timeOfDay = allDay ? null : `${pad(hh)}:${pad(mm)}:00`
+      // Work in the home timezone so time_of_day and the rebuilt occurrences
+      // match how buildPayload / projection write instants, on any device.
+      const { time: hhmm } = partsInZone(input.starts_at)
+      const [hh, mm] = hhmm.split(':').map(Number)
+      const timeOfDay = allDay ? null : `${hhmm}:00`
       const windowDays =
         allDay && input.ends_at
           ? Math.max(
@@ -545,17 +547,17 @@ function App() {
       for (const e of targets) {
         const isEdited = e.id === fromEventId
         const day = isEdited ? dayStart(input.starts_at) : dayStart(e.starts_at)
-        const startsAt = new Date(
+        const startsAt = zonedIso(
           day.getFullYear(),
-          day.getMonth(),
+          day.getMonth() + 1,
           day.getDate(),
           allDay ? 0 : hh,
           allDay ? 0 : mm,
-          0,
-        ).toISOString()
+        )
+        const endDay = new Date(day.getFullYear(), day.getMonth(), day.getDate() + windowDays)
         const endsAt =
           allDay && windowDays
-            ? new Date(day.getFullYear(), day.getMonth(), day.getDate() + windowDays, 0, 0, 0).toISOString()
+            ? zonedIso(endDay.getFullYear(), endDay.getMonth() + 1, endDay.getDate(), 0, 0)
             : null
         const evInput: EventInputData = {
           title: input.title,

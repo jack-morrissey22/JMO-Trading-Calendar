@@ -5,6 +5,7 @@ import { useEscClose } from '../lib/useEscClose'
 import type { EventInputData, EventRow, ReminderDraft, SeriesRow } from '../lib/api'
 import type { EventCategory, PriorityTier } from '../types'
 import { PRESETS, labelReminder, relative } from '../lib/reminders'
+import { zonedIsoFromParts, partsInZone } from '../lib/tz'
 import { playClip } from '../lib/sound'
 import { RecurrenceEditor } from './RecurrenceEditor'
 import type { RecurrenceValue } from './RecurrenceEditor'
@@ -37,14 +38,11 @@ const CUSTOM_UNITS: { label: string; mult: number }[] = [
   { label: 'days', mult: 1440 },
 ]
 
-const pad = (n: number) => String(n).padStart(2, '0')
 
+// Read an instant into the form in the home timezone, matching how buildPayload
+// writes it back — so editing is device-independent.
 function toLocalParts(iso: string) {
-  const d = new Date(iso)
-  return {
-    date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
-    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
-  }
+  return partsInZone(iso)
 }
 
 export type EventModalProps = {
@@ -242,11 +240,11 @@ export function EventModal({
   function buildPayload(): { input: EventInputData; sound: SoundChange } | null {
     if (!date || !title) return null
     const starts_at = allDay
-      ? new Date(`${date}T00:00:00`).toISOString()
-      : new Date(`${date}T${time}:00`).toISOString()
+      ? zonedIsoFromParts(date, '00:00')
+      : zonedIsoFromParts(date, time)
     // A window is an all-day event with an end date after the start date.
     const ends_at =
-      allDay && endDate && endDate > date ? new Date(`${endDate}T00:00:00`).toISOString() : null
+      allDay && endDate && endDate > date ? zonedIsoFromParts(endDate, '00:00') : null
     const input: EventInputData = {
       title: title.trim(),
       starts_at,
