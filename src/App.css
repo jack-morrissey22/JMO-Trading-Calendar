@@ -1700,6 +1700,80 @@
   font-size: 11.5px;
 }
 
+/* ---- Time-zones manager ---- */
+.tz-modal {
+  max-width: 500px;
+}
+.tz-toolbar {
+  display: flex;
+  gap: 8px;
+}
+.tz-search {
+  flex: 1;
+  min-width: 0;
+}
+.tz-bulk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  padding: 8px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.tz-bulk select {
+  margin-left: auto;
+}
+.tz-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 48vh;
+  overflow-y: auto;
+}
+.tz-empty {
+  padding: 16px 6px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.tz-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+}
+.tz-row.is-changed {
+  border-color: var(--accent);
+  background: var(--panel-2);
+}
+.tz-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.tz-row-title {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+}
+.tz-row-cat {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.tz-row select {
+  flex-shrink: 0;
+}
+.tz-changecount {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
 /* ============================================================
    Mobile (phones) — viewing-focused layout.
    Everything above is unchanged on desktop; these rules only

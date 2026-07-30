@@ -33,6 +33,7 @@ import {
   fetchViewFilters,
   saveViewFilters,
   projectSeries,
+  migrateSeriesTz,
   setEventReminders,
   setEventSeriesId,
   setEventSound,
@@ -48,6 +49,7 @@ import type { EventInputData, EventRow, ReminderDraft, SeriesInput, ViewFilters 
 import { EMPTY_FILTERS } from './lib/api'
 import { FiltersModal } from './components/FiltersModal'
 import { FindModal } from './components/FindModal'
+import { TimeZonesManager } from './components/TimeZonesManager'
 import type { SoundChange } from './components/EventModal'
 import type { RecurrenceValue } from './components/RecurrenceEditor'
 import { isWindow } from './lib/events'
@@ -174,6 +176,7 @@ function App() {
   const [showPush, setShowPush] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [showFind, setShowFind] = useState(false)
+  const [showTz, setShowTz] = useState(false)
   // Mobile-only: collapse the utility buttons and priority key behind toggles.
   const [menuOpen, setMenuOpen] = useState(false)
   const [legendOpen, setLegendOpen] = useState(false)
@@ -583,6 +586,20 @@ function App() {
     onSuccess: invalidateAll,
   })
 
+  // Bulk-migrate series to new market timezones (converts time + re-times future).
+  const migrateTzMut = useMutation({
+    mutationFn: async (changes: { seriesId: string; newTz: string }[]) => {
+      for (const c of changes) {
+        const s = (series ?? []).find((x) => x.id === c.seriesId)
+        if (s) await migrateSeriesTz(s, c.newTz)
+      }
+    },
+    onSuccess: () => {
+      invalidateAll()
+      setShowTz(false)
+    },
+  })
+
   // Store a note on the series (future occurrences inherit it) and copy it onto
   // this + all later existing occurrences.
   const applyNotesMut = useMutation({
@@ -843,6 +860,13 @@ function App() {
                 disabled={!tiers || tiers.length === 0}
               >
                 ⚙ Priorities
+              </button>
+              <button
+                className="header-btn"
+                onClick={() => setShowTz(true)}
+                disabled={!series || series.length === 0}
+              >
+                🕓 Time zones
               </button>
               <button className="header-btn" onClick={() => setShowPush(true)}>
                 🔔 Notifications
@@ -1105,6 +1129,15 @@ function App() {
           colorOf={colorOf}
           onPick={findGoTo}
           onClose={() => setShowFind(false)}
+        />
+      )}
+
+      {showTz && (
+        <TimeZonesManager
+          series={series ?? []}
+          busy={migrateTzMut.isPending}
+          onMigrate={(changes) => migrateTzMut.mutate(changes)}
+          onClose={() => setShowTz(false)}
         />
       )}
     </div>

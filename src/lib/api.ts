@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import { reminderFireTime } from './reminders'
-import { zonedIso } from './tz'
+import { zonedIso, partsInZone, convertClock, HOME_TZ } from './tz'
 import { computeOccurrences } from './recurrence'
 import type { RecurrenceRule } from './recurrence'
 import type { PriorityTier } from '../types'
@@ -558,4 +558,58 @@ export async function projectSeries(
     if (e2) throw e2
   }
   return dates.length
+}
+
+/** Migrate a series to a new market timezone: convert its time_of_day, tag the
+ *  series + all future occurrences with the new tz, and re-time (in place) only
+ *  the future occurrences whose real instant actually moves (the DST-mismatch
+ *  ones), recomputing their reminders. Past occurrences are history — left as-is.
+ *  Returns how many occurrences were re-timed. */
+export async function migrateSeriesTz(series: SeriesRow, newTz: string): Promise<number> {
+  const oldTz = series.tz ?? HOME_TZ
+  if (oldTz === newTz) return 0
+
+  const newTimeOfDay = series.time_of_day
+    ? `${convertClock(series.time_of_day.slice(0, 5), oldTz, newTz)}:00`
+    : series.time_of_day
+  await updateSeries(series.id, { tz: newTz, time_of_day: newTimeOfDay })
+
+  const todayMid = new Date()
+  todayMid.setHours(0, 0, 0, 0)
+  const todayIso = todayMid.toISOString()
+
+  // One bulk write to tag every future occurrence with the new zone.
+  await supabase
+    .from('events')
+    .update({ tz: newTz })
+    .eq('series_id', series.id)
+    .gte('starts_at', todayIso)
+
+  const { data: occs, error } = await supabase
+    .from('events')
+    .select('id, starts_at, all_day')
+    .eq('series_id', series.id)
+    .gte('starts_at', todayIso)
+  if (error) throw error
+
+  const [nh, nm] = (newTimeOfDay ?? '00:00').split(':').map(Number)
+  let retimed = 0
+  for (const occ of (occs ?? []) as { id: string; starts_at: string; all_day: boolean }[]) {
+    const { date } = partsInZone(occ.starts_at, oldTz) // occurrence's calendar date
+    const [y, mo, d] = date.split('-').map(Number)
+    const newStartsAt = occ.all_day
+      ? zonedIso(y, mo, d, 0, 0, newTz)
+      : zonedIso(y, mo, d, nh, nm, newTz)
+    // Skip occurrences whose real moment is unchanged (normal-offset dates).
+    if (new Date(newStartsAt).getTime() === new Date(occ.starts_at).getTime()) continue
+
+    await supabase.from('events').update({ starts_at: newStartsAt }).eq('id', occ.id)
+    const { data: rems } = await supabase
+      .from('reminders')
+      .select('kind, minutes_before, days_before, at_time, channel, email, push')
+      .eq('event_id', occ.id)
+    if (rems && rems.length) await setEventReminders(occ.id, rems as ReminderDraft[], newStartsAt)
+    retimed++
+  }
+  return retimed
 }
