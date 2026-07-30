@@ -46,6 +46,7 @@ import {
 import type { EventInputData, EventRow, ReminderDraft, SeriesInput, ViewFilters } from './lib/api'
 import { EMPTY_FILTERS } from './lib/api'
 import { FiltersModal } from './components/FiltersModal'
+import { FindModal } from './components/FindModal'
 import type { SoundChange } from './components/EventModal'
 import type { RecurrenceValue } from './components/RecurrenceEditor'
 import { isWindow } from './lib/events'
@@ -159,6 +160,7 @@ function App() {
   const [showInbox, setShowInbox] = useState(false)
   const [showPush, setShowPush] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [showFind, setShowFind] = useState(false)
   // Mobile-only: collapse the utility buttons and priority key behind toggles.
   const [menuOpen, setMenuOpen] = useState(false)
   const [legendOpen, setLegendOpen] = useState(false)
@@ -700,6 +702,17 @@ function App() {
   const openCreateAt = (date: Date, hour: number) =>
     setModal({ open: true, initialDate: fmtDate(date), initialTime: `${pad(hour)}:00` })
 
+  // From Find: jump the calendar to an occurrence's date, then open it.
+  const findGoTo = (id: string) => {
+    const ev = eventById(id)
+    if (!ev) return
+    const d = new Date(ev.starts_at)
+    setFocusDate(d)
+    if (view === 'month') calRef.current?.getApi().gotoDate(d)
+    setShowFind(false)
+    openEdit(id)
+  }
+
   const tierNameOf = (id: string | null) => (tiers ?? []).find((t) => t.id === id)?.name ?? ''
   const exportAs = (kind: 'csv' | 'json') => {
     const evs = events ?? []
@@ -777,6 +790,9 @@ function App() {
             <div className="header-menu-items" onClick={() => setMenuOpen(false)}>
               <button className="header-btn" onClick={() => setShowInbox(true)}>
                 🔮 Suggestions{tentativeEvents.length ? ` (${tentativeEvents.length})` : ''}
+              </button>
+              <button className="header-btn" onClick={() => setShowFind(true)}>
+                🔭 Find
               </button>
               <button
                 className={`header-btn${filtersActive ? ' filter-on' : ''}`}
@@ -1029,6 +1045,15 @@ function App() {
           filters={filters}
           onChange={setFilters}
           onClose={() => setShowFilters(false)}
+        />
+      )}
+
+      {showFind && (
+        <FindModal
+          events={visibleEvents}
+          colorOf={colorOf}
+          onPick={findGoTo}
+          onClose={() => setShowFind(false)}
         />
       )}
     </div>
