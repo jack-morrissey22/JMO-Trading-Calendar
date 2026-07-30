@@ -8,7 +8,7 @@
 
 import { sendPush } from './webpush.js'
 
-const WEEKLY_CRON = '0 7 * * 6' // Saturdays 07:00 UTC — weekly digest + backup.
+const MINUTE_CRON = '* * * * *' // the reminder sender + heartbeat trigger.
 
 export default {
   async fetch(request, env) {
@@ -16,8 +16,11 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    if (event.cron === WEEKLY_CRON) ctx.waitUntil(sendWeeklyDigest(env))
-    else ctx.waitUntil(sendDueReminders(env))
+    // The every-minute trigger is the sender; any other trigger (the weekly
+    // Saturday one) runs the digest. Keying off the minute cron avoids relying
+    // on the exact weekly cron string, which Cloudflare may normalise.
+    if (event.cron === MINUTE_CRON) ctx.waitUntil(sendDueReminders(env))
+    else ctx.waitUntil(sendWeeklyDigest(env))
   },
 }
 

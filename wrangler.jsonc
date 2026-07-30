@@ -11,6 +11,8 @@
   "triggers": {
     // Every minute: reminder sender + heartbeat. Saturdays 07:00 UTC: weekly
     // health-check + full backup email (see worker/index.js scheduled()).
-    "crons": ["* * * * *", "0 7 * * 6"]
+    // Day-of-week as the name "SAT" — a bare 6 is rendered as Friday by the
+    // Cloudflare dashboard, so the explicit name avoids that ambiguity.
+    "crons": ["* * * * *", "0 7 * * SAT"]
   }
 }
