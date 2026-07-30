@@ -340,6 +340,20 @@ export async function saveViewFilters(filters: ViewFilters): Promise<void> {
   if (error) throw error
 }
 
+// Liveness of the reminder sender: the Cloudflare Worker stamps last_run_at
+// every minute, so a stale value means the sender may be down.
+export type ServiceHealth = { last_run_at: string | null }
+
+export async function fetchServiceHealth(): Promise<ServiceHealth> {
+  const { data, error } = await supabase
+    .from('service_health')
+    .select('last_run_at')
+    .eq('id', 1)
+    .maybeSingle()
+  if (error) throw error
+  return { last_run_at: (data?.last_run_at as string | undefined) ?? null }
+}
+
 // ---------------------------------------------------------------------------
 // Series (recurring templates) + projection
 // ---------------------------------------------------------------------------

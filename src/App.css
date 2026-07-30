@@ -1669,6 +1669,30 @@
   font-style: italic;
 }
 
+/* ---- Reminder-service health badge (footer) ---- */
+.svc-health {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.svc-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-dim);
+}
+.svc-ok .svc-dot {
+  background: #10b981;
+}
+.svc-bad {
+  color: #ef4444;
+  font-weight: 600;
+}
+.svc-bad .svc-dot {
+  background: #ef4444;
+}
+
 /* ============================================================
    Mobile (phones) — viewing-focused layout.
    Everything above is unchanged on desktop; these rules only

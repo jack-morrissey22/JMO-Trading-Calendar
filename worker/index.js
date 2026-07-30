@@ -8,14 +8,56 @@
 
 import { sendPush } from './webpush.js'
 
+const WEEKLY_CRON = '0 7 * * 6' // Saturdays 07:00 UTC — weekly digest + backup.
+
 export default {
   async fetch(request, env) {
     return env.ASSETS.fetch(request)
   },
 
-  async scheduled(_event, env, ctx) {
-    ctx.waitUntil(sendDueReminders(env))
+  async scheduled(event, env, ctx) {
+    if (event.cron === WEEKLY_CRON) ctx.waitUntil(sendWeeklyDigest(env))
+    else ctx.waitUntil(sendDueReminders(env))
   },
+}
+
+// Shared PostgREST/Supabase fetch wrapper (service-role key bypasses RLS).
+function makeSb(url, key) {
+  return (path, init = {}) =>
+    fetch(`${url}${path}`, {
+      ...init,
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        ...(init.headers || {}),
+      },
+    })
+}
+
+// Format an ISO timestamp for the digest email, in the reminder timezone.
+function fmtWhen(iso, tz) {
+  try {
+    return new Intl.DateTimeFormat('en-GB', {
+      timeZone: tz,
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(new Date(iso))
+  } catch {
+    return iso
+  }
+}
+
+// UTF-8 safe base64 for Resend attachment content.
+function b64(str) {
+  const bytes = new TextEncoder().encode(str)
+  let bin = ''
+  for (const byte of bytes) bin += String.fromCharCode(byte)
+  return btoa(bin)
 }
 
 function whenStrings(startsAt, allDay, tz) {
@@ -52,16 +94,15 @@ async function sendDueReminders(env) {
       ? { publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY, subject: env.VAPID_SUBJECT }
       : null
 
-  const sb = (path, init = {}) =>
-    fetch(`${url}${path}`, {
-      ...init,
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        ...(init.headers || {}),
-      },
-    })
+  const sb = makeSb(url, key)
+
+  // Heartbeat: record that the sender ran, so the app can show a health
+  // indicator and a silently-dead cron becomes visible.
+  await sb('/rest/v1/service_health?id=eq.1', {
+    method: 'PATCH',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ last_run_at: new Date().toISOString() }),
+  }).catch(() => {})
 
   const now = Date.now()
   // 3s lookahead: also catch reminders due within the next few seconds, so a
@@ -139,4 +180,106 @@ async function sendDueReminders(env) {
     }
   }
   console.log('Done.')
+}
+
+// Weekly (Sat 07:00 UTC) health-check + full backup email. Entirely separate
+// from the reminder path so it never buries a real reminder alert. One email
+// per user with a plain-English health summary and a complete JSON backup
+// (every event, reminder and repeat schedule, all fields) attached.
+async function sendWeeklyDigest(env) {
+  const url = env.SUPABASE_URL
+  const key = env.SUPABASE_SERVICE_ROLE_KEY
+  const resendKey = env.RESEND_API_KEY
+  const from = env.REMINDER_FROM || 'JMO Calendar <onboarding@resend.dev>'
+  const tz = env.REMINDER_TZ || 'Europe/Dublin'
+  if (!url || !key) {
+    console.log('Digest: Supabase secrets not set — skipping.')
+    return
+  }
+  if (!resendKey) {
+    console.log('Digest: no Resend key — skipping.')
+    return
+  }
+  const sb = makeSb(url, key)
+
+  const nowMs = Date.now()
+  const nowIso = new Date(nowMs).toISOString()
+  const weekAgo = new Date(nowMs - 7 * 24 * 3600 * 1000).toISOString()
+  const weekAhead = new Date(nowMs + 7 * 24 * 3600 * 1000).toISOString()
+
+  const health = await sb('/rest/v1/service_health?id=eq.1&select=last_run_at')
+    .then((r) => r.json())
+    .catch(() => null)
+  const lastRun = Array.isArray(health) && health[0]?.last_run_at ? health[0].last_run_at : null
+  const healthy = lastRun && nowMs - new Date(lastRun).getTime() < 10 * 60 * 1000
+
+  const evUsers = await sb('/rest/v1/events?select=user_id').then((r) => r.json())
+  if (!Array.isArray(evUsers)) {
+    console.error('Digest: user query failed:', JSON.stringify(evUsers))
+    return
+  }
+  const userIds = [...new Set(evUsers.map((r) => r.user_id).filter(Boolean))]
+
+  for (const uid of userIds) {
+    const user = await sb(`/auth/v1/admin/users/${uid}`).then((x) => x.json())
+    const to = user?.email
+    if (!to) continue
+
+    const [events, reminders, series] = await Promise.all([
+      sb(`/rest/v1/events?user_id=eq.${uid}&select=*&order=starts_at`).then((r) => r.json()),
+      sb(`/rest/v1/reminders?user_id=eq.${uid}&select=*&order=fire_at`).then((r) => r.json()),
+      sb(`/rest/v1/series?user_id=eq.${uid}&select=*`).then((r) => r.json()),
+    ])
+    const evList = Array.isArray(events) ? events : []
+    const remList = Array.isArray(reminders) ? reminders : []
+    const serList = Array.isArray(series) ? series : []
+
+    const sentWeek = remList.filter((r) => r.sent_at && r.sent_at >= weekAgo).length
+    const queuedWeek = remList.filter(
+      (r) => !r.sent_at && r.fire_at >= nowIso && r.fire_at <= weekAhead,
+    ).length
+    const lastSent = remList.reduce((m, r) => (r.sent_at && r.sent_at > m ? r.sent_at : m), '')
+
+    const backup = {
+      app: 'JMO Trading Calendar',
+      backup_version: 1,
+      exported_at: nowIso,
+      counts: { events: evList.length, reminders: remList.length, series: serList.length },
+      events: evList,
+      reminders: remList,
+      series: serList,
+    }
+    const json = JSON.stringify(backup, null, 2)
+    const stamp = nowIso.slice(0, 10)
+
+    const lines = [
+      'JMO Trading Calendar — weekly health check & backup',
+      '',
+      healthy
+        ? `Reminder service: OK — sender last ran ${fmtWhen(lastRun, tz)}.`
+        : `Reminder service: ATTENTION — sender last ran ${lastRun ? fmtWhen(lastRun, tz) : 'never'}. It may be down; check the Cloudflare worker.`,
+      `Reminders sent in the last 7 days: ${sentWeek}.`,
+      `Reminders queued for the next 7 days: ${queuedWeek}.`,
+      lastSent ? `Most recent reminder sent: ${fmtWhen(lastSent, tz)}.` : '',
+      '',
+      `On file: ${evList.length} events, ${serList.length} repeating series, ${remList.length} reminders.`,
+      'A full backup (events, reminders and repeat schedules) is attached as JSON.',
+      '',
+      '— JMO Trading Calendar',
+    ].filter(Boolean)
+
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from,
+        to,
+        subject: `🗄 JMO Calendar — weekly backup & health check (${stamp})`,
+        text: lines.join('\n'),
+        attachments: [{ filename: `jmo-backup-${stamp}.json`, content: b64(json) }],
+      }),
+    })
+    if (res.ok) console.log(`Digest sent to ${to} (${evList.length} events).`)
+    else console.error('Digest Resend error', res.status, await res.text())
+  }
 }

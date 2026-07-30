@@ -29,6 +29,7 @@ import {
   fetchPriorityTiers,
   fetchReminders,
   fetchSeries,
+  fetchServiceHealth,
   fetchViewFilters,
   saveViewFilters,
   projectSeries,
@@ -76,6 +77,17 @@ const addMonths = (d: Date, n: number) => {
   return r
 }
 const monthTitle = (d: Date) => d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+
+// Compact "time since" for the reminder-service health badge.
+const agoLabel = (ms: number) => {
+  const s = Math.round(ms / 1000)
+  if (s < 60) return `${s}s ago`
+  const m = Math.round(s / 60)
+  if (m < 60) return `${m}m ago`
+  const h = Math.round(m / 60)
+  if (h < 24) return `${h}h ago`
+  return `${Math.round(h / 24)}d ago`
+}
 
 const dayStart = (iso: string) => {
   const d = new Date(iso)
@@ -189,6 +201,24 @@ function App() {
     queryFn: fetchSeries,
     enabled: !!session,
   })
+
+  // Reminder-sender liveness: refetch the heartbeat every minute, and tick a
+  // local clock every 30s so the "checked X ago" label stays current.
+  const { data: serviceHealth } = useQuery({
+    queryKey: ['service_health'],
+    queryFn: fetchServiceHealth,
+    enabled: !!session,
+    refetchInterval: 60_000,
+  })
+  const [nowTick, setNowTick] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNowTick(Date.now()), 30_000)
+    return () => clearInterval(t)
+  }, [])
+  const lastRunMs = serviceHealth?.last_run_at ? new Date(serviceHealth.last_run_at).getTime() : null
+  const healthAgeMs = lastRunMs != null ? nowTick - lastRunMs : null
+  // Sender runs every minute; allow generous slack for cron jitter before alarming.
+  const healthOk = healthAgeMs != null && healthAgeMs < 5 * 60_000
 
   const { data: viewFilters } = useQuery({
     queryKey: ['view_filters'],
@@ -937,6 +967,20 @@ function App() {
       <footer className="app-footer">
         Signed in as {session.user.email} · {events?.length ?? 0} event
         {(events?.length ?? 0) === 1 ? '' : 's'} · synced to your database
+        {' · '}
+        <span
+          className={`svc-health ${
+            healthAgeMs == null ? 'svc-unknown' : healthOk ? 'svc-ok' : 'svc-bad'
+          }`}
+          title="Reminder-sending service status (updates every minute)"
+        >
+          <span className="svc-dot" />
+          {healthAgeMs == null
+            ? 'reminders: status unknown'
+            : healthOk
+              ? `reminders healthy · checked ${agoLabel(healthAgeMs)}`
+              : `⚠ reminders — no check in ${agoLabel(healthAgeMs)}`}
+        </span>
       </footer>
 
       {modal.open && (
