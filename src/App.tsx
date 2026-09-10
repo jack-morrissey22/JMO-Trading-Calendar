@@ -561,7 +561,7 @@ function App() {
           allDay ? 0 : mm,
           evTz,
         )
-        const endDay = new Date(day.getFullYear(), day.getMonth(), day.getDate() + windowDays)
+        const endDay = new Date(day.getFullYear(), day.getMonth(), day.getDate() + (windowDays ?? 0))
         const endsAt =
           allDay && windowDays
             ? zonedIso(endDay.getFullYear(), endDay.getMonth() + 1, endDay.getDate(), 0, 0, evTz)
