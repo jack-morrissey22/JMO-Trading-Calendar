@@ -15,6 +15,9 @@
   --accent: #2563eb;
   --hover: #eef0f4;
   --today: rgba(37, 99, 235, 0.08);
+  --holiday-bg: #e6f6ec;
+  --holiday-border: #7fc79a;
+  --holiday-text: #1c7a45;
 }
 
 /* Dark theme */
@@ -28,6 +31,9 @@
   --accent: #60a5fa;
   --hover: #20222b;
   --today: rgba(96, 165, 250, 0.1);
+  --holiday-bg: rgba(16, 185, 129, 0.16);
+  --holiday-border: rgba(16, 185, 129, 0.55);
+  --holiday-text: #4ade80;
 }
 
 * {
