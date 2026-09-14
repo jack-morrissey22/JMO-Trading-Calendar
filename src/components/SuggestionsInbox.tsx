@@ -12,6 +12,8 @@ const monthLabelOf = (iso: string) =>
 type Props = {
   events: EventRow[] // upcoming tentative events, pre-sorted
   colorOf: (tierId: string | null) => string
+  /** Event id → respected-holiday name(s) it lands on, for the ⚠️ flag. */
+  holidayClash?: Map<string, string>
   busy?: boolean
   onConfirm: (id: string) => void
   onSkip: (id: string) => void
@@ -39,6 +41,7 @@ function whenLabel(e: EventRow) {
 export function SuggestionsInbox({
   events,
   colorOf,
+  holidayClash,
   busy,
   onConfirm,
   onSkip,
@@ -158,8 +161,16 @@ export function SuggestionsInbox({
                       <div className="inbox-row">
                         <span className="inbox-dot" style={{ background: colorOf(e.priority_tier_id) }} />
                         <div className="inbox-main">
-                          <div className="inbox-title">{e.title}</div>
+                          <div className="inbox-title">
+                            {holidayClash?.get(e.id) && <span className="clash-flag">⚠️</span>}
+                            {e.title}
+                          </div>
                           <div className="inbox-when">{whenLabel(e)}</div>
+                          {holidayClash?.get(e.id) && (
+                            <div className="inbox-clash">
+                              Lands on {holidayClash.get(e.id)} — a holiday it respects
+                            </div>
+                          )}
                         </div>
                         <div className="inbox-actions">
                       <button

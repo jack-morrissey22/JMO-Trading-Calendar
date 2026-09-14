@@ -326,12 +326,46 @@ function App() {
     return (tierId: string | null) => (tierId && map.get(tierId)) || '#6b7280'
   }, [tiers])
 
+  // Landing-on-holiday flag (Phase 3): per calendar, the day-keys → holiday name.
+  const holidayByCalDay = useMemo(() => {
+    const map = new Map<string, Map<string, string>>()
+    for (const h of holidays ?? []) {
+      let inner = map.get(h.calendar_id)
+      if (!inner) {
+        inner = new Map()
+        map.set(h.calendar_id, inner)
+      }
+      inner.set(h.day, h.name ?? 'Holiday')
+    }
+    return map
+  }, [holidays])
+
+  // Event id → the respected holiday name(s) it lands on (else absent). Business-day
+  // series already skip these, so in practice this catches day-of-month, weekly,
+  // interval and manual/pasted dates that fall on a holiday they're set to respect.
+  const holidayClashByEvent = useMemo(() => {
+    const out = new Map<string, string>()
+    for (const e of events ?? []) {
+      const ids = e.holiday_calendar_ids
+      if (!ids || ids.length === 0) continue
+      const day = partsInZone(e.starts_at, e.tz ?? HOME_TZ).date
+      const hits: string[] = []
+      for (const id of ids) {
+        const name = holidayByCalDay.get(id)?.get(day)
+        if (name && !hits.includes(name)) hits.push(name)
+      }
+      if (hits.length) out.set(e.id, hits.join(', '))
+    }
+    return out
+  }, [events, holidayByCalDay])
+
   const fcEvents: EventInput[] = useMemo(
     () =>
       filteredEvents.map((e) => {
         const color = colorOf(e.priority_tier_id)
         const window = isWindow(e)
         const tentative = e.status === 'tentative'
+        const clash = holidayClashByEvent.get(e.id)
         // FullCalendar treats an all-day `end` as exclusive, so extend by a day
         // to make the window span its final day inclusively.
         const end =
@@ -339,10 +373,11 @@ function App() {
         const classNames = [
           ...(window ? ['is-window'] : []),
           ...(tentative ? ['is-tentative'] : []),
+          ...(clash ? ['is-holiday-clash'] : []),
         ]
         return {
           id: e.id,
-          title: e.title,
+          title: clash ? `⚠️ ${e.title}` : e.title,
           start: e.starts_at,
           end,
           allDay: e.all_day,
@@ -352,7 +387,7 @@ function App() {
           classNames,
         }
       }),
-    [filteredEvents, colorOf],
+    [filteredEvents, colorOf, holidayClashByEvent],
   )
 
   // Holidays render as non-interactive all-day markers (awareness), always shown
@@ -1018,6 +1053,7 @@ function App() {
               date={focusDate}
               events={visibleEvents}
               holidays={holidaysByDay}
+              holidayClash={holidayClashByEvent}
               colorOf={colorOf}
               onEventClick={openEdit}
               onSlotClick={(hour) => openCreateAt(focusDate, hour)}
@@ -1027,6 +1063,7 @@ function App() {
               weekStart={startOfWeek(focusDate)}
               events={filteredEvents}
               holidays={holidaysByDay}
+              holidayClash={holidayClashByEvent}
               colorOf={colorOf}
               onEventClick={openEdit}
               onSlotClick={openCreateAt}
@@ -1040,6 +1077,7 @@ function App() {
               monthDate={focusDate}
               events={visibleEvents}
               holidays={holidaysByDay}
+              holidayClash={holidayClashByEvent}
               colorOf={colorOf}
               onEventClick={openEdit}
             />
@@ -1094,6 +1132,7 @@ function App() {
           templates={templates}
           categoryOptions={categoryOptions}
           holidayCalendars={holidayCalendars ?? []}
+          holidayClashName={modal.event ? holidayClashByEvent.get(modal.event.id) : undefined}
           initialDate={modal.initialDate}
           initialTime={modal.initialTime}
           initialReminders={
@@ -1152,6 +1191,7 @@ function App() {
         <SuggestionsInbox
           events={tentativeEvents}
           colorOf={colorOf}
+          holidayClash={holidayClashByEvent}
           busy={confirmMut.isPending || skipMut.isPending || confirmAllMut.isPending}
           onConfirm={(id) => confirmMut.mutate(id)}
           onSkip={(id) => skipMut.mutate(id)}

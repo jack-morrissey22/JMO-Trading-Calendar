@@ -5,6 +5,8 @@ type Props = {
   date: Date
   events: EventRow[]
   holidays?: Map<string, string[]>
+  /** Event id → respected-holiday name(s) it lands on, for the ⚠️ flag. */
+  holidayClash?: Map<string, string>
   colorOf: (tierId: string | null) => string
   onEventClick: (id: string) => void
   /** Click an (empty part of an) hour row to create an event at that hour. */
@@ -25,7 +27,7 @@ function barStyle(color: string, window: boolean) {
 // Custom elastic-hour day view: a continuous 24h rail whose hour rows grow to
 // fit however many point-in-time events fall in them, so a busy pre-market hour
 // stretches while quiet hours stay thin. Keeps the "shape of the day" (D-refine).
-export function DayView({ date, events, holidays, colorOf, onEventClick, onSlotClick }: Props) {
+export function DayView({ date, events, holidays, holidayClash, colorOf, onEventClick, onSlotClick }: Props) {
   const hols = holidays?.get(dayKey(date)) ?? []
   const onDay = events.filter((e) => coversDate(e, date))
   const allDay = onDay.filter((e) => e.all_day)
@@ -64,7 +66,9 @@ export function DayView({ date, events, holidays, colorOf, onEventClick, onSlotC
                 className={`dayview-event${e.status === 'tentative' ? ' is-tentative' : ''}`}
                 style={barStyle(colorOf(e.priority_tier_id), isWindow(e))}
                 onClick={() => onEventClick(e.id)}
+                title={holidayClash?.get(e.id) ? `Lands on a holiday it respects: ${holidayClash.get(e.id)}` : undefined}
               >
+                {holidayClash?.get(e.id) && <span className="clash-flag">⚠️</span>}
                 <span className="dayview-event-title">{e.title}</span>
               </button>
             ))}
@@ -89,10 +93,12 @@ export function DayView({ date, events, holidays, colorOf, onEventClick, onSlotC
                       ev.stopPropagation()
                       onEventClick(e.id)
                     }}
+                    title={holidayClash?.get(e.id) ? `Lands on a holiday it respects: ${holidayClash.get(e.id)}` : undefined}
                   >
                     <span className="dayview-event-time">
                       {pad(d.getHours())}:{pad(d.getMinutes())}
                     </span>
+                    {holidayClash?.get(e.id) && <span className="clash-flag">⚠️</span>}
                     <span className="dayview-event-title">{e.title}</span>
                   </button>
                 )

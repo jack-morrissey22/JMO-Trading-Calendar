@@ -6,6 +6,8 @@ type Props = {
   weekStart: Date // Monday of the visible week
   events: EventRow[]
   holidays?: Map<string, string[]>
+  /** Event id → respected-holiday name(s) it lands on, for the ⚠️ flag. */
+  holidayClash?: Map<string, string>
   colorOf: (tierId: string | null) => string
   onEventClick: (id: string) => void
   onSlotClick: (date: Date, hour: number) => void
@@ -37,6 +39,7 @@ export function WeekView({
   weekStart,
   events,
   holidays,
+  holidayClash,
   colorOf,
   onEventClick,
   onSlotClick,
@@ -89,12 +92,14 @@ export function WeekView({
           ev.stopPropagation()
           onEventClick(e.id)
         }}
+        title={holidayClash?.get(e.id) ? `Lands on a holiday it respects: ${holidayClash.get(e.id)}` : undefined}
       >
         {withTime && (
           <span className="dayview-event-time">
             {pad(d.getHours())}:{pad(d.getMinutes())}
           </span>
         )}
+        {holidayClash?.get(e.id) && <span className="clash-flag">⚠️</span>}
         <span className="dayview-event-title">{e.title}</span>
       </button>
     )

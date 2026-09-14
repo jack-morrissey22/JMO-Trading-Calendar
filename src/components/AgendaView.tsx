@@ -6,6 +6,8 @@ type Props = {
   monthDate: Date
   events: EventRow[]
   holidays?: Map<string, string[]>
+  /** Event id → respected-holiday name(s) it lands on, for the ⚠️ flag. */
+  holidayClash?: Map<string, string>
   colorOf: (tierId: string | null) => string
   onEventClick: (id: string) => void
 }
@@ -16,7 +18,7 @@ const dayKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d
 // Agenda: for every day in the month with any coverage, group its events by
 // "hourly headline" (Idea 2), skipping empty hours. All-day events and multi-day
 // windows appear under an "all-day" heading on each day they cover.
-export function AgendaView({ monthDate, events, holidays, colorOf, onEventClick }: Props) {
+export function AgendaView({ monthDate, events, holidays, holidayClash, colorOf, onEventClick }: Props) {
   const y = monthDate.getFullYear()
   const m = monthDate.getMonth()
   const lastDate = new Date(y, m + 1, 0).getDate()
@@ -73,12 +75,20 @@ export function AgendaView({ monthDate, events, holidays, colorOf, onEventClick 
   const timedRow = (e: EventRow) => {
     const d = new Date(e.starts_at)
     return (
-      <button key={e.id} className={`agenda-item${e.status === 'tentative' ? ' is-tentative' : ''}`} onClick={() => onEventClick(e.id)}>
+      <button
+        key={e.id}
+        className={`agenda-item${e.status === 'tentative' ? ' is-tentative' : ''}`}
+        onClick={() => onEventClick(e.id)}
+        title={holidayClash?.get(e.id) ? `Lands on a holiday it respects: ${holidayClash.get(e.id)}` : undefined}
+      >
         <span className="agenda-dot" style={{ background: colorOf(e.priority_tier_id) }} />
         <span className="agenda-time">
           {pad(d.getHours())}:{pad(d.getMinutes())}
         </span>
-        <span className="agenda-item-title">{e.title}</span>
+        <span className="agenda-item-title">
+          {holidayClash?.get(e.id) && <span className="clash-flag">⚠️</span>}
+          {e.title}
+        </span>
       </button>
     )
   }
@@ -87,12 +97,18 @@ export function AgendaView({ monthDate, events, holidays, colorOf, onEventClick 
     const color = colorOf(e.priority_tier_id)
     const win = isWindow(e)
     return (
-      <button key={e.id} className={`agenda-item${e.status === 'tentative' ? ' is-tentative' : ''}`} onClick={() => onEventClick(e.id)}>
+      <button
+        key={e.id}
+        className={`agenda-item${e.status === 'tentative' ? ' is-tentative' : ''}`}
+        onClick={() => onEventClick(e.id)}
+        title={holidayClash?.get(e.id) ? `Lands on a holiday it respects: ${holidayClash.get(e.id)}` : undefined}
+      >
         <span
           className="agenda-dot"
           style={win ? { background: 'transparent', border: `2px solid ${color}` } : { background: color }}
         />
         <span className="agenda-item-title">
+          {holidayClash?.get(e.id) && <span className="clash-flag">⚠️</span>}
           {e.title}
           {win && (
             <span className="agenda-window-note">

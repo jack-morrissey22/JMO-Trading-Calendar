@@ -18,6 +18,9 @@
   --holiday-bg: #e6f6ec;
   --holiday-border: #7fc79a;
   --holiday-text: #1c7a45;
+  --clash-bg: #fdf1e3;
+  --clash-border: #e0a561;
+  --clash-text: #9a5b0e;
 }
 
 /* Dark theme */
@@ -34,6 +37,9 @@
   --holiday-bg: rgba(16, 185, 129, 0.16);
   --holiday-border: rgba(16, 185, 129, 0.55);
   --holiday-text: #4ade80;
+  --clash-bg: rgba(245, 158, 11, 0.16);
+  --clash-border: rgba(245, 158, 11, 0.55);
+  --clash-text: #fbbf24;
 }
 
 * {

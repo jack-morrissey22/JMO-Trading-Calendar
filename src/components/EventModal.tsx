@@ -51,6 +51,8 @@ export type EventModalProps = {
   categoryOptions?: string[]
   /** Holiday calendars the event can "respect". */
   holidayCalendars?: { id: string; name: string }[]
+  /** If this occurrence lands on a respected holiday, its name(s) — for the ⚠️ banner. */
+  holidayClashName?: string
   initialDate?: string
   initialTime?: string
   initialReminders?: ReminderDraft[]
@@ -98,6 +100,7 @@ export function EventModal({
   templates,
   categoryOptions,
   holidayCalendars,
+  holidayClashName,
   initialDate,
   initialTime,
   initialReminders,
@@ -317,6 +320,13 @@ export function EventModal({
             ✕
           </button>
         </div>
+
+        {holidayClashName && (
+          <div className="clash-banner">
+            ⚠️ This occurrence falls on <strong>{holidayClashName}</strong> — a holiday it respects.
+            Adjust the date if the market is closed.
+          </div>
+        )}
 
         <div className="field title-field">
           Title
