@@ -49,6 +49,8 @@ export type EventModalProps = {
   templates?: EventTemplate[]
   /** Categories already used across the user's events, for the datalist suggestions. */
   categoryOptions?: string[]
+  /** Holiday calendars the event can "respect". */
+  holidayCalendars?: { id: string; name: string }[]
   initialDate?: string
   initialTime?: string
   initialReminders?: ReminderDraft[]
@@ -67,7 +69,12 @@ export type EventModalProps = {
     id: string,
   ) => void
   onSkip?: (id: string) => void
-  onUpdateSeries?: (seriesId: string, recurrence: RecurrenceValue, sound: SoundChange) => void
+  onUpdateSeries?: (
+    seriesId: string,
+    recurrence: RecurrenceValue,
+    sound: SoundChange,
+    holidayCalendarIds: string[],
+  ) => void
   onApplyForward?: (
     seriesId: string,
     fromEventId: string,
@@ -90,6 +97,7 @@ export function EventModal({
   series,
   templates,
   categoryOptions,
+  holidayCalendars,
   initialDate,
   initialTime,
   initialReminders,
@@ -124,6 +132,9 @@ export function EventModal({
   const [time, setTime] = useState(existingParts?.time ?? initialTime ?? '13:30')
   const [endDate, setEndDate] = useState(event?.ends_at ? partsInZone(event.ends_at, evTz).date : '')
   const [tz, setTz] = useState<string>(event?.tz ?? HOME_TZ)
+  const [holidayIds, setHolidayIds] = useState<string[]>(event?.holiday_calendar_ids ?? [])
+  const toggleHoliday = (id: string) =>
+    setHolidayIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
   const [priorityId, setPriorityId] = useState(
     event?.priority_tier_id ?? tiers[0]?.id ?? '',
   )
@@ -257,6 +268,7 @@ export function EventModal({
       notes: notes.trim() || null,
       speak,
       tz,
+      holiday_calendar_ids: holidayIds,
     }
     const sound: SoundChange = soundChanged ? { data: soundData, name: soundName } : undefined
     return { input, sound }
@@ -418,6 +430,28 @@ export function EventModal({
             </datalist>
           </label>
         </div>
+
+        {holidayCalendars && holidayCalendars.length > 0 && (
+          <div className="field holiday-respect">
+            Respects holidays
+            <div className="holiday-respect-list">
+              {holidayCalendars.map((c) => (
+                <label key={c.id} className={`holiday-respect-chip${holidayIds.includes(c.id) ? ' on' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={holidayIds.includes(c.id)}
+                    onChange={() => toggleHoliday(c.id)}
+                  />
+                  {c.name}
+                </label>
+              ))}
+            </div>
+            <p className="modal-hint">
+              Business-day patterns (e.g. the 3rd business day) skip these calendars' holidays.
+              {series ? ' For this repeating event, apply changes with “Update repeat & re-project” below.' : ''}
+            </p>
+          </div>
+        )}
 
         <label className="field">
           Tags (comma separated)
@@ -583,6 +617,7 @@ export function EventModal({
                         series.id,
                         recurrence,
                         soundChanged ? { data: soundData, name: soundName } : undefined,
+                        holidayIds,
                       )
                     }
                   >

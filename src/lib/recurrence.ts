@@ -19,6 +19,8 @@ export type RecurrenceRule =
 
 const isWeekend = (d: Date) => d.getDay() === 0 || d.getDay() === 6
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
+const p2 = (n: number) => String(n).padStart(2, '0')
+const ymd = (d: Date) => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`
 
 function nthWeekdayOfMonth(y: number, m: number, nth: number, wd: number): Date | null {
   if (nth === -1) {
@@ -33,11 +35,16 @@ function nthWeekdayOfMonth(y: number, m: number, nth: number, wd: number): Date 
   return d.getMonth() === m ? d : null // e.g. no 5th Friday
 }
 
-function nthBizday(y: number, m: number, nth: number): Date | null {
+// Business day = a weekday that is not a holiday (holidays come from the
+// calendar(s) the series respects). isHol defaults to "never" (weekends only).
+type IsHol = (d: Date) => boolean
+const noHol: IsHol = () => false
+
+function nthBizday(y: number, m: number, nth: number, isHol: IsHol = noHol): Date | null {
   let d = new Date(y, m, 1)
   let count = 0
   while (d.getMonth() === m) {
-    if (!isWeekend(d)) {
+    if (!isWeekend(d) && !isHol(d)) {
       count++
       if (count === nth) return d
     }
@@ -46,11 +53,11 @@ function nthBizday(y: number, m: number, nth: number): Date | null {
   return null // month has fewer than `nth` business days
 }
 
-function nthLastBizday(y: number, m: number, nth: number): Date {
+function nthLastBizday(y: number, m: number, nth: number, isHol: IsHol = noHol): Date {
   let d = new Date(y, m + 1, 0)
   let count = 0
   while (true) {
-    if (!isWeekend(d)) {
+    if (!isWeekend(d) && !isHol(d)) {
       count++
       if (count === nth) return d
     }
@@ -86,7 +93,7 @@ function nearestWeekdayInMonth(d: Date, m: number): Date {
   return r
 }
 
-function dayInMonth(y: number, m: number, rule: DayRule): Date | null {
+function dayInMonth(y: number, m: number, rule: DayRule, isHol: IsHol = noHol): Date | null {
   switch (rule.type) {
     case 'nth_weekday':
       return nthWeekdayOfMonth(y, m, rule.nth, rule.weekday)
@@ -102,9 +109,9 @@ function dayInMonth(y: number, m: number, rule: DayRule): Date | null {
       return rollWeekend(d, rule.roll)
     }
     case 'nth_bizday':
-      return nthBizday(y, m, rule.nth)
+      return nthBizday(y, m, rule.nth, isHol)
     case 'nth_last_bizday':
-      return nthLastBizday(y, m, rule.nth)
+      return nthLastBizday(y, m, rule.nth, isHol)
     case 'offset_snap': {
       const anchor = new Date(y, m, rule.day)
       if (anchor.getMonth() !== m) return null
@@ -118,15 +125,22 @@ function dayInMonth(y: number, m: number, rule: DayRule): Date | null {
       let k = rule.bizdays
       while (k > 0) {
         d = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1)
-        if (!isWeekend(d)) k--
+        if (!isWeekend(d) && !isHol(d)) k--
       }
       return d
     }
   }
 }
 
-/** All occurrence dates of a rule within [from, to] inclusive (local dates). */
-export function computeOccurrences(rule: RecurrenceRule, from: Date, to: Date): Date[] {
+/** All occurrence dates of a rule within [from, to] inclusive (local dates).
+ *  `holidays` (YYYY-MM-DD keys) makes the business-day patterns skip those days. */
+export function computeOccurrences(
+  rule: RecurrenceRule,
+  from: Date,
+  to: Date,
+  holidays?: Set<string>,
+): Date[] {
+  const isHol: IsHol = holidays && holidays.size ? (d) => holidays.has(ymd(d)) : noHol
   const out: Date[] = []
   if (rule.mode === 'manual') {
     const f = startOfDay(from)
@@ -161,7 +175,7 @@ export function computeOccurrences(rule: RecurrenceRule, from: Date, to: Date): 
   const f = startOfDay(from)
   while (new Date(y, m, 1) <= endMonth) {
     if (rule.months.includes(m + 1)) {
-      const d = dayInMonth(y, m, rule.day)
+      const d = dayInMonth(y, m, rule.day, isHol)
       if (d && d >= f && d <= to) out.push(d)
     }
     m++

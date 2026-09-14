@@ -300,7 +300,8 @@ function App() {
   // Once per session, top up each series so at least the horizon stays populated
   // as dates pass. Never projects before a series' own start date.
   useEffect(() => {
-    if (toppedUp.current || !series || !events) return
+    // Wait for holidays too, so business-day series top up holiday-aware.
+    if (toppedUp.current || !series || !events || !holidays) return
     toppedUp.current = true
     if (series.length === 0) return
     ;(async () => {
@@ -310,14 +311,15 @@ function App() {
         const own = events.filter((e) => e.series_id === s.id)
         const existing = new Set(own.map((e) => fmtDate(new Date(e.starts_at))))
         const { from, to } = boundsFor(own, s.rule, s.horizon_months)
-        added += await projectSeries(s, existing, from, to)
+        added += await projectSeries(s, existing, from, to, holidaySetFor(s.holiday_calendar_ids))
       }
       if (added > 0) {
         queryClient.invalidateQueries({ queryKey: ['events'] })
         queryClient.invalidateQueries({ queryKey: ['reminders'] })
       }
     })()
-  }, [series, events, queryClient])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [series, events, holidays, queryClient])
 
   const colorOf = useMemo(() => {
     const map = new Map((tiers ?? []).map((t) => [t.id, t.color]))
@@ -381,6 +383,16 @@ function App() {
     }
     return map
   }, [holidays])
+
+  // The set of holiday day-keys a series respects, for holiday-aware projection
+  // (undefined = respects none → business-day counting stays weekends-only).
+  const holidaySetFor = (ids: string[] | undefined): Set<string> | undefined => {
+    if (!ids || ids.length === 0) return undefined
+    const idSet = new Set(ids)
+    const out = new Set<string>()
+    for (const h of holidays ?? []) if (idSet.has(h.calendar_id)) out.add(h.day)
+    return out.size ? out : undefined
+  }
 
   // Cyclical memory: the most recent entry per event title, with its reminders,
   // used to pre-fill a new event of the same name.
@@ -482,11 +494,12 @@ function App() {
           sound_name: sound?.name ?? null,
           notes: null,
           tz: input.tz ?? null,
+          holiday_calendar_ids: input.holiday_calendar_ids ?? [],
         })
         await setEventSeriesId(eventId, s.id)
         const ownSeed = [{ starts_at: input.starts_at, status: 'confirmed' } as EventRow]
         const { from, to } = boundsFor(ownSeed, rule, recurrence.horizonMonths)
-        await projectSeries(s, new Set([fmtDate(seedDay)]), from, to)
+        await projectSeries(s, new Set([fmtDate(seedDay)]), from, to, holidaySetFor(s.holiday_calendar_ids))
       }
     },
     onSuccess: () => {
@@ -670,16 +683,19 @@ function App() {
       seriesId,
       rec,
       sound,
+      holidayCalendarIds,
     }: {
       seriesId: string
       rec: RecurrenceValue
       sound?: SoundChange
+      holidayCalendarIds?: string[]
     }) => {
       const patch: Partial<SeriesInput> = { rule: rec.rule, horizon_months: rec.horizonMonths }
       if (sound !== undefined) {
         patch.sound_data = sound.data
         patch.sound_name = sound.name
       }
+      if (holidayCalendarIds !== undefined) patch.holiday_calendar_ids = holidayCalendarIds
       const s = await updateSeries(seriesId, patch)
       await deleteSeriesTentatives(seriesId)
       // Propagate a sound change to the kept (confirmed) occurrences; fresh
@@ -688,7 +704,7 @@ function App() {
       const own = (events ?? []).filter((e) => e.series_id === seriesId && e.status !== 'tentative')
       const existing = new Set(own.map((e) => fmtDate(new Date(e.starts_at))))
       const { from, to } = boundsFor(own, rec.rule, rec.horizonMonths)
-      await projectSeries(s, existing, from, to)
+      await projectSeries(s, existing, from, to, holidaySetFor(s.holiday_calendar_ids))
     },
     onSuccess: invalidateAll,
   })
@@ -707,7 +723,7 @@ function App() {
       const own = (events ?? []).filter((e) => e.series_id === seriesId)
       const existing = new Set(own.map((e) => fmtDate(new Date(e.starts_at))))
       const { from, to } = boundsFor(own, s.rule, s.horizon_months)
-      await projectSeries(s, existing, from, to)
+      await projectSeries(s, existing, from, to, holidaySetFor(s.holiday_calendar_ids))
     },
     onSuccess: invalidateAll,
   })
@@ -736,7 +752,7 @@ function App() {
       const seed = earliest ? new Date(earliest) : today
       seed.setHours(0, 0, 0, 0)
       const from = seed > today ? seed : today
-      await projectSeries(s, existing, from, new Date(`${toDate}T00:00:00`))
+      await projectSeries(s, existing, from, new Date(`${toDate}T00:00:00`), holidaySetFor(s.holiday_calendar_ids))
     },
     onSuccess: invalidateAll,
   })
@@ -1077,6 +1093,7 @@ function App() {
           }
           templates={templates}
           categoryOptions={categoryOptions}
+          holidayCalendars={holidayCalendars ?? []}
           initialDate={modal.initialDate}
           initialTime={modal.initialTime}
           initialReminders={
@@ -1113,7 +1130,9 @@ function App() {
             saveMut.mutate({ input, reminders: rem, sound, confirmAfter: true, id })
           }
           onSkip={(id) => skipMut.mutate(id)}
-          onUpdateSeries={(seriesId, rec, sound) => updateSeriesMut.mutate({ seriesId, rec, sound })}
+          onUpdateSeries={(seriesId, rec, sound, holidayCalendarIds) =>
+            updateSeriesMut.mutate({ seriesId, rec, sound, holidayCalendarIds })
+          }
           onApplyForward={(seriesId, fromEventId, input, rem, sound) =>
             applyForwardMut.mutate({ seriesId, fromEventId, input, reminders: rem, sound })
           }

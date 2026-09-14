@@ -70,6 +70,8 @@ export type EventRow = {
   status: string
   /** Market timezone the time is defined in (null = home timezone). */
   tz: string | null
+  /** Holiday calendar ids this event respects (business-day skip + flagging). */
+  holiday_calendar_ids: string[]
 }
 
 export type EventInputData = {
@@ -83,6 +85,7 @@ export type EventInputData = {
   notes?: string | null
   speak: boolean
   tz?: string | null
+  holiday_calendar_ids?: string[]
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -102,6 +105,7 @@ function mapEventRow(r: any): EventRow {
     series_id: r.series_id ?? null,
     status: r.status ?? 'confirmed',
     tz: r.tz ?? null,
+    holiday_calendar_ids: r.holiday_calendar_ids ?? [],
   }
 }
 
@@ -119,7 +123,7 @@ export async function fetchEvents(): Promise<EventRow[]> {
     const { data, error } = await supabase
       .from('events')
       .select(
-        'id, title, starts_at, ends_at, all_day, priority_tier_id, category, tags, notes, extra, sound_name, series_id, status, tz',
+        'id, title, starts_at, ends_at, all_day, priority_tier_id, category, tags, notes, extra, sound_name, series_id, status, tz, holiday_calendar_ids',
       )
       .order('starts_at')
       .range(from, from + PAGE - 1)
@@ -469,6 +473,7 @@ export type SeriesRow = {
   sound_name: string | null // filename / "has a custom sound" flag
   notes: string | null // optional series-wide note; new occurrences inherit it
   tz: string | null // market timezone the time_of_day is defined in (null = home)
+  holiday_calendar_ids: string[] // holiday calendars this series respects
 }
 
 export type SeriesInput = Omit<SeriesRow, 'id'>
@@ -477,7 +482,7 @@ export async function fetchSeries(): Promise<SeriesRow[]> {
   const { data, error } = await supabase
     .from('series')
     .select(
-      'id, title, time_of_day, all_day, window_days, priority_tier_id, category, tags, speak, reminders, rule, horizon_months, active, sound_data, sound_name, notes, tz',
+      'id, title, time_of_day, all_day, window_days, priority_tier_id, category, tags, speak, reminders, rule, horizon_months, active, sound_data, sound_name, notes, tz, holiday_calendar_ids',
     )
   if (error) throw error
   return (data ?? []) as SeriesRow[]
@@ -584,10 +589,13 @@ export async function projectSeries(
   existingDateKeys: Set<string>,
   from: Date,
   to: Date,
+  holidays?: Set<string>,
 ): Promise<number> {
   const { data: userRes } = await supabase.auth.getUser()
   const user_id = userRes.user?.id
-  const dates = computeOccurrences(series.rule, from, to).filter((d) => !existingDateKeys.has(ymd(d)))
+  const dates = computeOccurrences(series.rule, from, to, holidays).filter(
+    (d) => !existingDateKeys.has(ymd(d)),
+  )
   if (dates.length === 0) return 0
 
   const todayMid = new Date()
@@ -614,6 +622,7 @@ export async function projectSeries(
     sound_data: series.sound_data,
     sound_name: series.sound_name,
     tz: series.tz ?? null,
+    holiday_calendar_ids: series.holiday_calendar_ids ?? [],
   }))
 
   const { data: inserted, error } = await supabase
