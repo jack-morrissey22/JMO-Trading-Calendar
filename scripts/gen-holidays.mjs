@@ -26,9 +26,14 @@ const MARKETS = {
   Spain: 'ES',
 }
 
+// Force English names for a market instead of its own language (which is the
+// default). China's holidays would otherwise be in Chinese.
+const ENGLISH = new Set(['China'])
+
 const seed = {}
 for (const [label, code] of Object.entries(MARKETS)) {
   const hd = new Holidays(code)
+  if (ENGLISH.has(label)) hd.setLanguages('en')
   const byDay = new Map() // de-dupe if two years or rule variants collide on a day
   for (const year of YEARS) {
     for (const h of hd.getHolidays(year)) {

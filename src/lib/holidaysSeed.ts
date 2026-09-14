@@ -1052,179 +1052,179 @@ export const HOLIDAY_SEED: Record<string, SeedHoliday[]> = {
   "China": [
     {
       "day": "2026-01-01",
-      "name": "元旦"
+      "name": "New Year's Day"
     },
     {
       "day": "2026-02-16",
-      "name": "春节"
+      "name": "Spring Festival"
     },
     {
       "day": "2026-02-17",
-      "name": "春节"
+      "name": "Spring Festival"
     },
     {
       "day": "2026-02-18",
-      "name": "春节"
+      "name": "Spring Festival"
     },
     {
       "day": "2026-03-08",
-      "name": "国际妇女节"
+      "name": "International Women's Day"
     },
     {
       "day": "2026-04-05",
-      "name": "清明节 清明節"
+      "name": "Qingming Festival"
     },
     {
       "day": "2026-05-01",
-      "name": "劳动节"
+      "name": "Labour Day"
     },
     {
       "day": "2026-05-04",
-      "name": "青年节"
+      "name": "Youth Day"
     },
     {
       "day": "2026-06-01",
-      "name": "六一儿童节"
+      "name": "Children's Day"
     },
     {
       "day": "2026-06-19",
-      "name": "端午节"
+      "name": "Dragon Boat Festival"
     },
     {
       "day": "2026-08-01",
-      "name": "建军节"
+      "name": "Army Day"
     },
     {
       "day": "2026-09-25",
-      "name": "中秋节"
+      "name": "Mid-Autumn Festival"
     },
     {
       "day": "2026-10-01",
-      "name": "国庆节"
+      "name": "National Day"
     },
     {
       "day": "2026-10-02",
-      "name": "国庆节"
+      "name": "National Day"
     },
     {
       "day": "2026-10-03",
-      "name": "国庆节"
+      "name": "National Day"
     },
     {
       "day": "2027-01-01",
-      "name": "元旦"
+      "name": "New Year's Day"
     },
     {
       "day": "2027-02-05",
-      "name": "春节"
+      "name": "Spring Festival"
     },
     {
       "day": "2027-02-06",
-      "name": "春节"
+      "name": "Spring Festival"
     },
     {
       "day": "2027-02-07",
-      "name": "春节"
+      "name": "Spring Festival"
     },
     {
       "day": "2027-03-08",
-      "name": "国际妇女节"
+      "name": "International Women's Day"
     },
     {
       "day": "2027-04-05",
-      "name": "清明节 清明節"
+      "name": "Qingming Festival"
     },
     {
       "day": "2027-05-01",
-      "name": "劳动节"
+      "name": "Labour Day"
     },
     {
       "day": "2027-05-04",
-      "name": "青年节"
+      "name": "Youth Day"
     },
     {
       "day": "2027-06-01",
-      "name": "六一儿童节"
+      "name": "Children's Day"
     },
     {
       "day": "2027-06-09",
-      "name": "端午节"
+      "name": "Dragon Boat Festival"
     },
     {
       "day": "2027-08-01",
-      "name": "建军节"
+      "name": "Army Day"
     },
     {
       "day": "2027-09-15",
-      "name": "中秋节"
+      "name": "Mid-Autumn Festival"
     },
     {
       "day": "2027-10-01",
-      "name": "国庆节"
+      "name": "National Day"
     },
     {
       "day": "2027-10-02",
-      "name": "国庆节"
+      "name": "National Day"
     },
     {
       "day": "2027-10-03",
-      "name": "国庆节"
+      "name": "National Day"
     },
     {
       "day": "2028-01-01",
-      "name": "元旦"
+      "name": "New Year's Day"
     },
     {
       "day": "2028-01-25",
-      "name": "春节"
+      "name": "Spring Festival"
     },
     {
       "day": "2028-01-26",
-      "name": "春节"
+      "name": "Spring Festival"
     },
     {
       "day": "2028-01-27",
-      "name": "春节"
+      "name": "Spring Festival"
     },
     {
       "day": "2028-03-08",
-      "name": "国际妇女节"
+      "name": "International Women's Day"
     },
     {
       "day": "2028-04-04",
-      "name": "清明节 清明節"
+      "name": "Qingming Festival"
     },
     {
       "day": "2028-05-01",
-      "name": "劳动节"
+      "name": "Labour Day"
     },
     {
       "day": "2028-05-04",
-      "name": "青年节"
+      "name": "Youth Day"
     },
     {
       "day": "2028-05-28",
-      "name": "端午节"
+      "name": "Dragon Boat Festival"
     },
     {
       "day": "2028-06-01",
-      "name": "六一儿童节"
+      "name": "Children's Day"
     },
     {
       "day": "2028-08-01",
-      "name": "建军节"
+      "name": "Army Day"
     },
     {
       "day": "2028-10-01",
-      "name": "国庆节"
+      "name": "National Day"
     },
     {
       "day": "2028-10-02",
-      "name": "国庆节"
+      "name": "National Day"
     },
     {
       "day": "2028-10-03",
-      "name": "国庆节"
+      "name": "National Day"
     }
   ],
   "Spain": [
