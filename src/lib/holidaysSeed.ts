@@ -1,6 +1,7 @@
 // Auto-generated starter holiday data (public holidays 2026-2028) from the
 // date-holidays library, for one-click import in the Holidays manager. Edit there
-// afterwards to match your exact exchange calendars. Regenerate for later years.
+// afterwards to match your exact exchange calendars. Regenerate with
+// scripts/gen-holidays.mjs (bump YEARS for later years).
 
 export type SeedHoliday = { day: string; name: string }
 export const HOLIDAY_SEED: Record<string, SeedHoliday[]> = {
@@ -850,6 +851,502 @@ export const HOLIDAY_SEED: Record<string, SeedHoliday[]> = {
     {
       "day": "2028-12-25",
       "name": "Christmas Day"
+    }
+  ],
+  "Canada": [
+    {
+      "day": "2026-01-01",
+      "name": "New Year's Day"
+    },
+    {
+      "day": "2026-04-03",
+      "name": "Good Friday"
+    },
+    {
+      "day": "2026-07-01",
+      "name": "Canada Day"
+    },
+    {
+      "day": "2026-09-07",
+      "name": "Labour Day"
+    },
+    {
+      "day": "2026-12-25",
+      "name": "Christmas Day"
+    },
+    {
+      "day": "2027-01-01",
+      "name": "New Year's Day"
+    },
+    {
+      "day": "2027-03-26",
+      "name": "Good Friday"
+    },
+    {
+      "day": "2027-07-01",
+      "name": "Canada Day"
+    },
+    {
+      "day": "2027-09-06",
+      "name": "Labour Day"
+    },
+    {
+      "day": "2027-12-25",
+      "name": "Christmas Day"
+    },
+    {
+      "day": "2028-01-01",
+      "name": "New Year's Day"
+    },
+    {
+      "day": "2028-04-14",
+      "name": "Good Friday"
+    },
+    {
+      "day": "2028-07-01",
+      "name": "Canada Day"
+    },
+    {
+      "day": "2028-09-04",
+      "name": "Labour Day"
+    },
+    {
+      "day": "2028-12-25",
+      "name": "Christmas Day"
+    }
+  ],
+  "Switzerland": [
+    {
+      "day": "2026-01-01",
+      "name": "Neujahr"
+    },
+    {
+      "day": "2026-04-03",
+      "name": "Karfreitag"
+    },
+    {
+      "day": "2026-04-05",
+      "name": "Ostersonntag"
+    },
+    {
+      "day": "2026-04-06",
+      "name": "Ostermontag"
+    },
+    {
+      "day": "2026-05-14",
+      "name": "Auffahrt"
+    },
+    {
+      "day": "2026-05-24",
+      "name": "Pfingstsonntag"
+    },
+    {
+      "day": "2026-05-25",
+      "name": "Pfingstmontag"
+    },
+    {
+      "day": "2026-08-01",
+      "name": "Bundesfeiertag"
+    },
+    {
+      "day": "2026-09-20",
+      "name": "Eidg. Dank-, Buss- und Bettag"
+    },
+    {
+      "day": "2026-12-25",
+      "name": "Weihnachtstag"
+    },
+    {
+      "day": "2026-12-26",
+      "name": "Stephanstag"
+    },
+    {
+      "day": "2027-01-01",
+      "name": "Neujahr"
+    },
+    {
+      "day": "2027-03-26",
+      "name": "Karfreitag"
+    },
+    {
+      "day": "2027-03-28",
+      "name": "Ostersonntag"
+    },
+    {
+      "day": "2027-03-29",
+      "name": "Ostermontag"
+    },
+    {
+      "day": "2027-05-06",
+      "name": "Auffahrt"
+    },
+    {
+      "day": "2027-05-16",
+      "name": "Pfingstsonntag"
+    },
+    {
+      "day": "2027-05-17",
+      "name": "Pfingstmontag"
+    },
+    {
+      "day": "2027-08-01",
+      "name": "Bundesfeiertag"
+    },
+    {
+      "day": "2027-09-19",
+      "name": "Eidg. Dank-, Buss- und Bettag"
+    },
+    {
+      "day": "2027-12-25",
+      "name": "Weihnachtstag"
+    },
+    {
+      "day": "2027-12-26",
+      "name": "Stephanstag"
+    },
+    {
+      "day": "2028-01-01",
+      "name": "Neujahr"
+    },
+    {
+      "day": "2028-04-14",
+      "name": "Karfreitag"
+    },
+    {
+      "day": "2028-04-16",
+      "name": "Ostersonntag"
+    },
+    {
+      "day": "2028-04-17",
+      "name": "Ostermontag"
+    },
+    {
+      "day": "2028-05-25",
+      "name": "Auffahrt"
+    },
+    {
+      "day": "2028-06-04",
+      "name": "Pfingstsonntag"
+    },
+    {
+      "day": "2028-06-05",
+      "name": "Pfingstmontag"
+    },
+    {
+      "day": "2028-08-01",
+      "name": "Bundesfeiertag"
+    },
+    {
+      "day": "2028-09-17",
+      "name": "Eidg. Dank-, Buss- und Bettag"
+    },
+    {
+      "day": "2028-12-25",
+      "name": "Weihnachtstag"
+    },
+    {
+      "day": "2028-12-26",
+      "name": "Stephanstag"
+    }
+  ],
+  "China": [
+    {
+      "day": "2026-01-01",
+      "name": "元旦"
+    },
+    {
+      "day": "2026-02-16",
+      "name": "春节"
+    },
+    {
+      "day": "2026-02-17",
+      "name": "春节"
+    },
+    {
+      "day": "2026-02-18",
+      "name": "春节"
+    },
+    {
+      "day": "2026-03-08",
+      "name": "国际妇女节"
+    },
+    {
+      "day": "2026-04-05",
+      "name": "清明节 清明節"
+    },
+    {
+      "day": "2026-05-01",
+      "name": "劳动节"
+    },
+    {
+      "day": "2026-05-04",
+      "name": "青年节"
+    },
+    {
+      "day": "2026-06-01",
+      "name": "六一儿童节"
+    },
+    {
+      "day": "2026-06-19",
+      "name": "端午节"
+    },
+    {
+      "day": "2026-08-01",
+      "name": "建军节"
+    },
+    {
+      "day": "2026-09-25",
+      "name": "中秋节"
+    },
+    {
+      "day": "2026-10-01",
+      "name": "国庆节"
+    },
+    {
+      "day": "2026-10-02",
+      "name": "国庆节"
+    },
+    {
+      "day": "2026-10-03",
+      "name": "国庆节"
+    },
+    {
+      "day": "2027-01-01",
+      "name": "元旦"
+    },
+    {
+      "day": "2027-02-05",
+      "name": "春节"
+    },
+    {
+      "day": "2027-02-06",
+      "name": "春节"
+    },
+    {
+      "day": "2027-02-07",
+      "name": "春节"
+    },
+    {
+      "day": "2027-03-08",
+      "name": "国际妇女节"
+    },
+    {
+      "day": "2027-04-05",
+      "name": "清明节 清明節"
+    },
+    {
+      "day": "2027-05-01",
+      "name": "劳动节"
+    },
+    {
+      "day": "2027-05-04",
+      "name": "青年节"
+    },
+    {
+      "day": "2027-06-01",
+      "name": "六一儿童节"
+    },
+    {
+      "day": "2027-06-09",
+      "name": "端午节"
+    },
+    {
+      "day": "2027-08-01",
+      "name": "建军节"
+    },
+    {
+      "day": "2027-09-15",
+      "name": "中秋节"
+    },
+    {
+      "day": "2027-10-01",
+      "name": "国庆节"
+    },
+    {
+      "day": "2027-10-02",
+      "name": "国庆节"
+    },
+    {
+      "day": "2027-10-03",
+      "name": "国庆节"
+    },
+    {
+      "day": "2028-01-01",
+      "name": "元旦"
+    },
+    {
+      "day": "2028-01-25",
+      "name": "春节"
+    },
+    {
+      "day": "2028-01-26",
+      "name": "春节"
+    },
+    {
+      "day": "2028-01-27",
+      "name": "春节"
+    },
+    {
+      "day": "2028-03-08",
+      "name": "国际妇女节"
+    },
+    {
+      "day": "2028-04-04",
+      "name": "清明节 清明節"
+    },
+    {
+      "day": "2028-05-01",
+      "name": "劳动节"
+    },
+    {
+      "day": "2028-05-04",
+      "name": "青年节"
+    },
+    {
+      "day": "2028-05-28",
+      "name": "端午节"
+    },
+    {
+      "day": "2028-06-01",
+      "name": "六一儿童节"
+    },
+    {
+      "day": "2028-08-01",
+      "name": "建军节"
+    },
+    {
+      "day": "2028-10-01",
+      "name": "国庆节"
+    },
+    {
+      "day": "2028-10-02",
+      "name": "国庆节"
+    },
+    {
+      "day": "2028-10-03",
+      "name": "国庆节"
+    }
+  ],
+  "Spain": [
+    {
+      "day": "2026-01-01",
+      "name": "Año Nuevo"
+    },
+    {
+      "day": "2026-01-06",
+      "name": "Día de los Reyes Magos"
+    },
+    {
+      "day": "2026-04-03",
+      "name": "Viernes Santo"
+    },
+    {
+      "day": "2026-05-01",
+      "name": "Día del Trabajador"
+    },
+    {
+      "day": "2026-08-15",
+      "name": "Asunción"
+    },
+    {
+      "day": "2026-10-12",
+      "name": "Fiesta Nacional de España"
+    },
+    {
+      "day": "2026-11-01",
+      "name": "Todos los Santos"
+    },
+    {
+      "day": "2026-12-06",
+      "name": "Día de la Constitución Española"
+    },
+    {
+      "day": "2026-12-08",
+      "name": "La inmaculada concepción"
+    },
+    {
+      "day": "2026-12-25",
+      "name": "Navidad"
+    },
+    {
+      "day": "2027-01-01",
+      "name": "Año Nuevo"
+    },
+    {
+      "day": "2027-01-06",
+      "name": "Día de los Reyes Magos"
+    },
+    {
+      "day": "2027-03-26",
+      "name": "Viernes Santo"
+    },
+    {
+      "day": "2027-05-01",
+      "name": "Día del Trabajador"
+    },
+    {
+      "day": "2027-08-15",
+      "name": "Asunción"
+    },
+    {
+      "day": "2027-10-12",
+      "name": "Fiesta Nacional de España"
+    },
+    {
+      "day": "2027-11-01",
+      "name": "Todos los Santos"
+    },
+    {
+      "day": "2027-12-06",
+      "name": "Día de la Constitución Española"
+    },
+    {
+      "day": "2027-12-08",
+      "name": "La inmaculada concepción"
+    },
+    {
+      "day": "2027-12-25",
+      "name": "Navidad"
+    },
+    {
+      "day": "2028-01-01",
+      "name": "Año Nuevo"
+    },
+    {
+      "day": "2028-01-06",
+      "name": "Día de los Reyes Magos"
+    },
+    {
+      "day": "2028-04-14",
+      "name": "Viernes Santo"
+    },
+    {
+      "day": "2028-05-01",
+      "name": "Día del Trabajador"
+    },
+    {
+      "day": "2028-08-15",
+      "name": "Asunción"
+    },
+    {
+      "day": "2028-10-12",
+      "name": "Fiesta Nacional de España"
+    },
+    {
+      "day": "2028-11-01",
+      "name": "Todos los Santos"
+    },
+    {
+      "day": "2028-12-06",
+      "name": "Día de la Constitución Española"
+    },
+    {
+      "day": "2028-12-08",
+      "name": "La inmaculada concepción"
+    },
+    {
+      "day": "2028-12-25",
+      "name": "Navidad"
     }
   ]
 }

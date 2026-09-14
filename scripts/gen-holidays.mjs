@@ -1,0 +1,56 @@
+// Regenerates src/lib/holidaysSeed.ts — the starter holiday data offered by the
+// "Quick-add a market" import in the Holidays manager. Public holidays only, in
+// each market's own language (the date-holidays library default), for YEARS below.
+//
+//   node scripts/gen-holidays.mjs
+//
+// date-holidays is a devDependency; the generated file is static (the library is
+// NOT bundled into the app). Bump YEARS and re-run to extend into later years.
+
+import Holidays from 'date-holidays'
+import { writeFileSync } from 'node:fs'
+
+const YEARS = [2026, 2027, 2028]
+
+// Label shown in the app → the date-holidays country code.
+const MARKETS = {
+  US: 'US',
+  UK: 'GB',
+  Germany: 'DE',
+  France: 'FR',
+  Japan: 'JP',
+  Singapore: 'SG',
+  Canada: 'CA',
+  Switzerland: 'CH',
+  China: 'CN',
+  Spain: 'ES',
+}
+
+const seed = {}
+for (const [label, code] of Object.entries(MARKETS)) {
+  const hd = new Holidays(code)
+  const byDay = new Map() // de-dupe if two years or rule variants collide on a day
+  for (const year of YEARS) {
+    for (const h of hd.getHolidays(year)) {
+      if (h.type !== 'public') continue // exchanges close for public holidays
+      const day = h.date.slice(0, 10) // "YYYY-MM-DD HH:mm:ss" → "YYYY-MM-DD"
+      if (!byDay.has(day)) byDay.set(day, h.name)
+    }
+  }
+  seed[label] = [...byDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, name]) => ({ day, name }))
+}
+
+const header = `// Auto-generated starter holiday data (public holidays ${YEARS[0]}-${YEARS[YEARS.length - 1]}) from the
+// date-holidays library, for one-click import in the Holidays manager. Edit there
+// afterwards to match your exact exchange calendars. Regenerate with
+// scripts/gen-holidays.mjs (bump YEARS for later years).
+
+export type SeedHoliday = { day: string; name: string }
+export const HOLIDAY_SEED: Record<string, SeedHoliday[]> = ${JSON.stringify(seed, null, 2)}
+`
+
+writeFileSync('src/lib/holidaysSeed.ts', header)
+const counts = Object.entries(seed).map(([k, v]) => `${k}=${v.length}`).join(', ')
+console.log(`Wrote src/lib/holidaysSeed.ts (${counts})`)
