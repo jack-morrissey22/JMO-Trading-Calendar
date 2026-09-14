@@ -41,6 +41,7 @@ import {
   setEventSound,
   setEventStatus,
   setSeriesEventsSound,
+  setSeriesEventsHolidays,
   skipEvent,
   stopSeries,
   updateEvent,
@@ -736,6 +737,10 @@ function App() {
       // Propagate a sound change to the kept (confirmed) occurrences; fresh
       // tentatives below inherit it from the series row.
       if (sound !== undefined) await setSeriesEventsSound(seriesId, sound.data, sound.name)
+      // Propagate the respected-holiday calendars to all kept occurrences too, so
+      // the landing-on-holiday flag reaches already-confirmed ones (business-day
+      // patterns still move future tentatives off holidays in the re-projection).
+      if (holidayCalendarIds !== undefined) await setSeriesEventsHolidays(seriesId, holidayCalendarIds)
       const own = (events ?? []).filter((e) => e.series_id === seriesId && e.status !== 'tentative')
       const existing = new Set(own.map((e) => fmtDate(new Date(e.starts_at))))
       const { from, to } = boundsFor(own, rec.rule, rec.horizonMonths)

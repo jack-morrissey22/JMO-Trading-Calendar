@@ -523,6 +523,19 @@ export async function setSeriesEventsSound(
   if (error) throw error
 }
 
+/** Propagate the series' respected-holiday calendars to all its occurrences,
+ *  so the landing-on-holiday flag shows on already-confirmed ones too. */
+export async function setSeriesEventsHolidays(
+  seriesId: string,
+  ids: string[],
+): Promise<void> {
+  const { error } = await supabase
+    .from('events')
+    .update({ holiday_calendar_ids: ids })
+    .eq('series_id', seriesId)
+  if (error) throw error
+}
+
 /** Set a shared note on the series (so future occurrences inherit it) and copy it
  *  onto this + all later existing occurrences (from `fromIso` forward). */
 export async function applySeriesNotesForward(
