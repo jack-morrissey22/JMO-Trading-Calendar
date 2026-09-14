@@ -4,6 +4,7 @@ import { coversDate, isWindow } from '../lib/events'
 type Props = {
   date: Date
   events: EventRow[]
+  holidays?: Map<string, string[]>
   colorOf: (tierId: string | null) => string
   onEventClick: (id: string) => void
   /** Click an (empty part of an) hour row to create an event at that hour. */
@@ -12,6 +13,7 @@ type Props = {
 
 const HOURS = Array.from({ length: 24 }, (_, h) => h)
 const pad = (n: number) => String(n).padStart(2, '0')
+const dayKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 
 // Distinct style for windows (translucent fill + solid border) vs solid bars.
 function barStyle(color: string, window: boolean) {
@@ -23,7 +25,8 @@ function barStyle(color: string, window: boolean) {
 // Custom elastic-hour day view: a continuous 24h rail whose hour rows grow to
 // fit however many point-in-time events fall in them, so a busy pre-market hour
 // stretches while quiet hours stay thin. Keeps the "shape of the day" (D-refine).
-export function DayView({ date, events, colorOf, onEventClick, onSlotClick }: Props) {
+export function DayView({ date, events, holidays, colorOf, onEventClick, onSlotClick }: Props) {
+  const hols = holidays?.get(dayKey(date)) ?? []
   const onDay = events.filter((e) => coversDate(e, date))
   const allDay = onDay.filter((e) => e.all_day)
   const timed = onDay.filter((e) => !e.all_day)
@@ -41,6 +44,16 @@ export function DayView({ date, events, colorOf, onEventClick, onSlotClick }: Pr
 
   return (
     <div className="dayview">
+      {hols.length > 0 && (
+        <div className="dayview-row dayview-holiday-row">
+          <div className="dayview-hour-label">holiday</div>
+          <div className="dayview-hour-body">
+            {hols.map((n, i) => (
+              <span key={i} className="holiday-chip">🏦 {n}</span>
+            ))}
+          </div>
+        </div>
+      )}
       {allDay.length > 0 && (
         <div className="dayview-row dayview-allday">
           <div className="dayview-hour-label">all-day</div>

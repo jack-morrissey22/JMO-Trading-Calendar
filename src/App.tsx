@@ -32,6 +32,8 @@ import {
   fetchServiceHealth,
   fetchViewFilters,
   saveViewFilters,
+  fetchHolidayCalendars,
+  fetchHolidays,
   projectSeries,
   migrateSeriesTz,
   setEventReminders,
@@ -50,6 +52,7 @@ import { EMPTY_FILTERS } from './lib/api'
 import { FiltersModal } from './components/FiltersModal'
 import { FindModal } from './components/FindModal'
 import { TimeZonesManager } from './components/TimeZonesManager'
+import { HolidaysManager } from './components/HolidaysManager'
 import type { SoundChange } from './components/EventModal'
 import type { RecurrenceValue } from './components/RecurrenceEditor'
 import { isWindow } from './lib/events'
@@ -177,6 +180,7 @@ function App() {
   const [showFilters, setShowFilters] = useState(false)
   const [showFind, setShowFind] = useState(false)
   const [showTz, setShowTz] = useState(false)
+  const [showHolidays, setShowHolidays] = useState(false)
   // Mobile-only: collapse the utility buttons and priority key behind toggles.
   const [menuOpen, setMenuOpen] = useState(false)
   const [legendOpen, setLegendOpen] = useState(false)
@@ -227,6 +231,17 @@ function App() {
   const { data: viewFilters } = useQuery({
     queryKey: ['view_filters'],
     queryFn: fetchViewFilters,
+    enabled: !!session,
+  })
+
+  const { data: holidayCalendars } = useQuery({
+    queryKey: ['holiday_calendars'],
+    queryFn: fetchHolidayCalendars,
+    enabled: !!session,
+  })
+  const { data: holidays } = useQuery({
+    queryKey: ['holidays'],
+    queryFn: fetchHolidays,
     enabled: !!session,
   })
   const filters = viewFilters ?? EMPTY_FILTERS
@@ -337,6 +352,35 @@ function App() {
       }),
     [filteredEvents, colorOf],
   )
+
+  // Holidays render as non-interactive all-day markers (awareness), always shown
+  // regardless of the priority/category filters.
+  const holidayFcEvents: EventInput[] = useMemo(
+    () =>
+      (holidays ?? []).map((h) => ({
+        id: `hol:${h.id}`,
+        title: `🏦 ${h.name ?? 'Holiday'}`,
+        start: h.day,
+        allDay: true,
+        editable: false,
+        classNames: ['is-holiday'],
+      })),
+    [holidays],
+  )
+  const fcEventsWithHolidays = useMemo(
+    () => [...holidayFcEvents, ...fcEvents],
+    [holidayFcEvents, fcEvents],
+  )
+  // Day-keyed holiday names ("YYYY-MM-DD" -> [names]) for the custom views.
+  const holidaysByDay = useMemo(() => {
+    const map = new Map<string, string[]>()
+    for (const h of holidays ?? []) {
+      const list = map.get(h.day) ?? []
+      list.push(h.name ?? 'Holiday')
+      map.set(h.day, list)
+    }
+    return map
+  }, [holidays])
 
   // Cyclical memory: the most recent entry per event title, with its reminders,
   // used to pre-fill a new event of the same name.
@@ -868,6 +912,9 @@ function App() {
               >
                 🕓 Time zones
               </button>
+              <button className="header-btn" onClick={() => setShowHolidays(true)}>
+                📅 Holidays
+              </button>
               <button className="header-btn" onClick={() => setShowPush(true)}>
                 🔔 Notifications
               </button>
@@ -954,6 +1001,7 @@ function App() {
             <DayView
               date={focusDate}
               events={visibleEvents}
+              holidays={holidaysByDay}
               colorOf={colorOf}
               onEventClick={openEdit}
               onSlotClick={(hour) => openCreateAt(focusDate, hour)}
@@ -962,6 +1010,7 @@ function App() {
             <WeekView
               weekStart={startOfWeek(focusDate)}
               events={filteredEvents}
+              holidays={holidaysByDay}
               colorOf={colorOf}
               onEventClick={openEdit}
               onSlotClick={openCreateAt}
@@ -974,6 +1023,7 @@ function App() {
             <AgendaView
               monthDate={focusDate}
               events={visibleEvents}
+              holidays={holidaysByDay}
               colorOf={colorOf}
               onEventClick={openEdit}
             />
@@ -982,9 +1032,11 @@ function App() {
               ref={calRef}
               initialView={FC_VIEW.month}
               initialDate={focusDate}
-              events={fcEvents}
+              events={fcEventsWithHolidays}
               onDateClick={(dateStr) => setModal({ open: true, initialDate: dateStr })}
-              onEventClick={openEdit}
+              onEventClick={(id) => {
+                if (!id.startsWith('hol:')) openEdit(id)
+              }}
               onDatesSet={onDatesSet}
               onNavLinkDay={(date) => {
                 setFocusDate(date)
@@ -1138,6 +1190,18 @@ function App() {
           busy={migrateTzMut.isPending}
           onMigrate={(changes) => migrateTzMut.mutate(changes)}
           onClose={() => setShowTz(false)}
+        />
+      )}
+
+      {showHolidays && (
+        <HolidaysManager
+          calendars={holidayCalendars ?? []}
+          holidays={holidays ?? []}
+          onChanged={() => {
+            queryClient.invalidateQueries({ queryKey: ['holiday_calendars'] })
+            queryClient.invalidateQueries({ queryKey: ['holidays'] })
+          }}
+          onClose={() => setShowHolidays(false)}
         />
       )}
     </div>

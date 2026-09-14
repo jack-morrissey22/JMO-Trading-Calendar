@@ -5,6 +5,7 @@ import { coversDate, isWindow } from '../lib/events'
 type Props = {
   weekStart: Date // Monday of the visible week
   events: EventRow[]
+  holidays?: Map<string, string[]>
   colorOf: (tierId: string | null) => string
   onEventClick: (id: string) => void
   onSlotClick: (date: Date, hour: number) => void
@@ -13,6 +14,7 @@ type Props = {
 
 const HOURS = Array.from({ length: 24 }, (_, h) => h)
 const pad = (n: number) => String(n).padStart(2, '0')
+const dayKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 
 function addDays(d: Date, n: number) {
   const r = new Date(d)
@@ -34,6 +36,7 @@ function sameDay(a: Date, b: Date) {
 export function WeekView({
   weekStart,
   events,
+  holidays,
   colorOf,
   onEventClick,
   onSlotClick,
@@ -41,6 +44,8 @@ export function WeekView({
 }: Props) {
   const days = HOURS.slice(0, 7).map((_, i) => addDays(weekStart, i))
   const today = new Date()
+  const weekHols = days.map((d) => holidays?.get(dayKey(d)) ?? [])
+  const hasHol = weekHols.some((h) => h.length > 0)
 
   // Index events by day column + hour, plus per-day all-day events. All-day
   // events (incl. multi-day windows) are added to every day column they cover.
@@ -108,6 +113,20 @@ export function WeekView({
           {d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}
         </button>
       ))}
+
+      {/* Holiday row (only when the week has any holiday) */}
+      {hasHol && (
+        <Fragment>
+          <div className="weekview-hour-label weekview-allday-label">holiday</div>
+          {days.map((_, i) => (
+            <div key={i} className="weekview-cell weekview-allday-cell">
+              {weekHols[i].map((n, j) => (
+                <span key={j} className="holiday-chip">🏦 {n}</span>
+              ))}
+            </div>
+          ))}
+        </Fragment>
+      )}
 
       {/* All-day row (only when the week has any all-day events) */}
       {hasAllDay && (

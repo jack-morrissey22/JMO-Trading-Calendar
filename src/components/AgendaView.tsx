@@ -5,16 +5,18 @@ import { coversDate, endDay, isWindow } from '../lib/events'
 type Props = {
   monthDate: Date
   events: EventRow[]
+  holidays?: Map<string, string[]>
   colorOf: (tierId: string | null) => string
   onEventClick: (id: string) => void
 }
 
 const pad = (n: number) => String(n).padStart(2, '0')
+const dayKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 
 // Agenda: for every day in the month with any coverage, group its events by
 // "hourly headline" (Idea 2), skipping empty hours. All-day events and multi-day
 // windows appear under an "all-day" heading on each day they cover.
-export function AgendaView({ monthDate, events, colorOf, onEventClick }: Props) {
+export function AgendaView({ monthDate, events, holidays, colorOf, onEventClick }: Props) {
   const y = monthDate.getFullYear()
   const m = monthDate.getMonth()
   const lastDate = new Date(y, m + 1, 0).getDate()
@@ -22,6 +24,7 @@ export function AgendaView({ monthDate, events, colorOf, onEventClick }: Props) 
   const groups: {
     key: string
     date: Date
+    hols: string[]
     allDay: EventRow[]
     hours: { hour: number; items: EventRow[] }[]
   }[] = []
@@ -29,7 +32,8 @@ export function AgendaView({ monthDate, events, colorOf, onEventClick }: Props) 
   for (let dd = 1; dd <= lastDate; dd++) {
     const date = new Date(y, m, dd)
     const onDay = events.filter((e) => coversDate(e, date))
-    if (onDay.length === 0) continue
+    const hols = holidays?.get(dayKey(date)) ?? []
+    if (onDay.length === 0 && hols.length === 0) continue
 
     const allDay = onDay.filter((e) => e.all_day)
     const timed = onDay
@@ -44,7 +48,7 @@ export function AgendaView({ monthDate, events, colorOf, onEventClick }: Props) 
       else hours.push({ hour: h, items: [e] })
     }
 
-    groups.push({ key: `${y}-${m}-${dd}`, date, allDay, hours })
+    groups.push({ key: `${y}-${m}-${dd}`, date, hols, allDay, hours })
   }
 
   // "Today" guide line: highlight today's group if it has events, otherwise drop a
@@ -121,7 +125,7 @@ export function AgendaView({ monthDate, events, colorOf, onEventClick }: Props) 
 
   return (
     <div className="agenda" ref={rootRef}>
-      {groups.map(({ key, date, allDay, hours }, i) => {
+      {groups.map(({ key, date, hols, allDay, hours }, i) => {
         const isToday = date.getTime() === tTime
         return (
           <Fragment key={key}>
@@ -135,6 +139,17 @@ export function AgendaView({ monthDate, events, colorOf, onEventClick }: Props) 
                 })}
                 {isToday && <span className="agenda-today-tag">Today</span>}
               </div>
+
+              {hols.length > 0 && (
+                <div className="agenda-group">
+                  <div className="agenda-headline">holiday</div>
+                  <div className="agenda-items">
+                    {hols.map((n, j) => (
+                      <div key={j} className="agenda-holiday">🏦 {n}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {allDay.length > 0 && (
                 <div className="agenda-group">

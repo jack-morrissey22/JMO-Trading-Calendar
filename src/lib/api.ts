@@ -360,6 +360,94 @@ export async function fetchServiceHealth(): Promise<ServiceHealth> {
 }
 
 // ---------------------------------------------------------------------------
+// Holiday calendars (named lists of dates; events can "respect" them in Phase 2)
+// ---------------------------------------------------------------------------
+
+export type HolidayCalendar = { id: string; name: string }
+export type Holiday = { id: string; calendar_id: string; day: string; name: string | null }
+
+export async function fetchHolidayCalendars(): Promise<HolidayCalendar[]> {
+  const { data, error } = await supabase
+    .from('holiday_calendars')
+    .select('id, name')
+    .order('name')
+  if (error) throw error
+  return (data ?? []) as HolidayCalendar[]
+}
+
+export async function fetchHolidays(): Promise<Holiday[]> {
+  const rows: Holiday[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from('holidays')
+      .select('id, calendar_id, day, name')
+      .order('day')
+      .range(from, from + PAGE - 1)
+    if (error) throw error
+    const batch = (data ?? []) as Holiday[]
+    rows.push(...batch)
+    if (batch.length < PAGE) break
+  }
+  return rows
+}
+
+export async function createHolidayCalendar(name: string): Promise<HolidayCalendar> {
+  const { data: userRes } = await supabase.auth.getUser()
+  const user_id = userRes.user?.id
+  const { data, error } = await supabase
+    .from('holiday_calendars')
+    .insert({ name: name.trim() || 'Untitled', user_id })
+    .select('id, name')
+    .single()
+  if (error) throw error
+  return data as HolidayCalendar
+}
+
+export async function renameHolidayCalendar(id: string, name: string): Promise<void> {
+  const { error } = await supabase
+    .from('holiday_calendars')
+    .update({ name: name.trim() || 'Untitled' })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteHolidayCalendar(id: string): Promise<void> {
+  const { error } = await supabase.from('holiday_calendars').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function addHoliday(calendarId: string, day: string, name: string): Promise<void> {
+  const { data: userRes } = await supabase.auth.getUser()
+  const user_id = userRes.user?.id
+  const { error } = await supabase
+    .from('holidays')
+    .upsert(
+      { calendar_id: calendarId, day, name: name.trim() || null, user_id },
+      { onConflict: 'calendar_id,day', ignoreDuplicates: true },
+    )
+  if (error) throw error
+}
+
+export async function deleteHoliday(id: string): Promise<void> {
+  const { error } = await supabase.from('holidays').delete().eq('id', id)
+  if (error) throw error
+}
+
+/** Bulk-import seed dates into a calendar, skipping any that already exist. */
+export async function importHolidays(
+  calendarId: string,
+  rows: { day: string; name: string }[],
+): Promise<void> {
+  const { data: userRes } = await supabase.auth.getUser()
+  const user_id = userRes.user?.id
+  const payload = rows.map((r) => ({ calendar_id: calendarId, day: r.day, name: r.name, user_id }))
+  const { error } = await supabase
+    .from('holidays')
+    .upsert(payload, { onConflict: 'calendar_id,day', ignoreDuplicates: true })
+  if (error) throw error
+}
+
+// ---------------------------------------------------------------------------
 // Series (recurring templates) + projection
 // ---------------------------------------------------------------------------
 
