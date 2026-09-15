@@ -391,34 +391,49 @@ function App() {
     [filteredEvents, colorOf, holidayClashByEvent],
   )
 
+  // Calendar id → its name (e.g. "US"), to prefix each holiday marker so it's
+  // clear which market it belongs to ("US: Labor Day").
+  const calNameById = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const c of holidayCalendars ?? []) m.set(c.id, c.name)
+    return m
+  }, [holidayCalendars])
+  const holidayLabel = (h: { calendar_id: string; name: string | null }) => {
+    const cal = calNameById.get(h.calendar_id)
+    const name = h.name ?? 'Holiday'
+    return cal ? `${cal}: ${name}` : name
+  }
+
   // Holidays render as non-interactive all-day markers (awareness), always shown
   // regardless of the priority/category filters.
   const holidayFcEvents: EventInput[] = useMemo(
     () =>
       (holidays ?? []).map((h) => ({
         id: `hol:${h.id}`,
-        title: `🏦 ${h.name ?? 'Holiday'}`,
+        title: `🏦 ${holidayLabel(h)}`,
         start: h.day,
         allDay: true,
         editable: false,
         classNames: ['is-holiday'],
       })),
-    [holidays],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [holidays, calNameById],
   )
   const fcEventsWithHolidays = useMemo(
     () => [...holidayFcEvents, ...fcEvents],
     [holidayFcEvents, fcEvents],
   )
-  // Day-keyed holiday names ("YYYY-MM-DD" -> [names]) for the custom views.
+  // Day-keyed holiday labels ("YYYY-MM-DD" -> ["US: Labor Day", …]) for the views.
   const holidaysByDay = useMemo(() => {
     const map = new Map<string, string[]>()
     for (const h of holidays ?? []) {
       const list = map.get(h.day) ?? []
-      list.push(h.name ?? 'Holiday')
+      list.push(holidayLabel(h))
       map.set(h.day, list)
     }
     return map
-  }, [holidays])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [holidays, calNameById])
 
   // The set of holiday day-keys a series respects, for holiday-aware projection
   // (undefined = respects none → business-day counting stays weekends-only).
