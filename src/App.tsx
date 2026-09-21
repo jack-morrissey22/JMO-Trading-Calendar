@@ -186,6 +186,7 @@ function App() {
   const [showTz, setShowTz] = useState(false)
   const [showHolidayRoster, setShowHolidayRoster] = useState(false)
   const [showRestore, setShowRestore] = useState(false)
+  const [backingUp, setBackingUp] = useState(false)
   const [showHolidays, setShowHolidays] = useState(false)
   // Mobile-only: collapse the utility buttons and priority key behind toggles.
   const [menuOpen, setMenuOpen] = useState(false)
@@ -929,7 +930,6 @@ function App() {
   }
   // A complete, restore-ready snapshot (raw rows incl. ids, links and audio) —
   // the same shape as the weekly backup email, downloadable on demand.
-  const [backingUp, setBackingUp] = useState(false)
   const downloadRestoreBackup = async () => {
     setShowExport(false)
     setBackingUp(true)
