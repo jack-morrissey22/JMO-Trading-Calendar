@@ -1,6 +1,6 @@
 # JMO Calendar — recurrence pattern mapping guide
 
-**Reflects the app's pattern set as of 2026-09-21 (commit a8354ec).**
+**Reflects the app's pattern set as of 2026-09-21 (rev 2).**
 If the app gains a new pattern type, this file is updated in the dev chat and re-stamped.
 
 ---
@@ -10,8 +10,8 @@ If the app gains a new pattern type, this file is updated in the dev chat and re
 1. Open a **fresh Claude chat** (a plain claude.ai chat is fine — no codebase needed).
 2. Paste this **entire file** as the first message.
 3. Then, one event at a time, paste the event's name and its **past release dates** (as many as you have, `YYYY-MM-DD` or any clear format).
-4. Claude returns **either** an exact rule to set in the app **or** a `⚠️ NO RULE FITS` report.
-5. You apply the FIT rules in the app (see "Applying a rule" at the bottom). You collect the MISFIT reports and bring them to the **dev chat** to design new pattern types.
+4. Claude returns one of: a clean **FIT**, an **APPROXIMATE FIT** (the best formula + its miss profile), a **MANUAL** recommendation (only for genuinely irregular schedules), or a **MISFIT** report.
+5. You apply FIT / APPROXIMATE-FIT / MANUAL results in the app (see "Applying a rule" at the bottom), adjusting an approximate formula's known misses as they approach. You collect any **MISFIT** reports and bring them to the **dev chat** to design new pattern types.
 
 **The single most important instruction to the assistant using this guide:** your job is to find the *true* pattern, not to make it fit. If none of the rules below reproduces the past dates, you MUST say so and characterise the real pattern — never present an approximate rule as a match. Getting a square peg into a round hole here is the failure mode we are explicitly avoiding.
 
@@ -24,10 +24,17 @@ Given a list of past dates for one recurring event:
 1. **Extract structure.** For each date note: weekday, day-of-month, business-day index counting from the 1st (weekdays only), business-day index counting back from month-end, and which week of the month it is (1st/2nd/… occurrence of that weekday). Also note which months of the year appear, and the gaps between dates.
 2. **Form a hypothesis** about the invariant that holds across all dates (e.g. "always the 2nd Thursday", "always the 3rd business day", "every 6 weeks").
 3. **Test it as one of the rules below** by computing what that rule would produce for each historical month and comparing to the actual dates.
-4. A rule **fits only if it reproduces every past date** — with one allowance: the three *business-day* rules and *day-of-month with a weekend roll* legitimately shift around weekends and **market holidays**. So a date that moved only because of a holiday or weekend still counts as a fit for those rules. (You won't know the user's exact holiday calendar; reason from well-known market holidays, and if a single deviation is plausibly a holiday shift, treat it as a fit and say so.)
-5. Output a **FIT** or a **MISFIT** using the templates below.
+4. A rule is a **clean FIT** only if it reproduces every past date — with one allowance: the three *business-day* rules and *day-of-month with a weekend roll* legitimately shift around weekends and **market holidays**, so a date that moved only for a holiday/weekend still counts (say so). (You won't know the user's exact holiday calendar; reason from well-known market holidays.)
+5. **If no rule is a clean fit, do NOT jump to manual or misfit.** Find the *best-fitting* formula and report it as an **APPROXIMATE FIT**: state its accuracy over the sample and characterise exactly which months/conditions it misses and what to do about them (adjust that occurrence when confirming it; attach a holiday calendar so holiday shifts get flagged). A formula that's roughly **≥80%** right is usually the right answer — the app is built for "mostly right + adjust the known exceptions as they approach," so a good approximation beats a hand-maintained date list across many events.
+6. Pick exactly one output:
+   - **FIT** — a formula reproduces every date.
+   - **APPROXIMATE FIT** — the best formula is imperfect but reasonably close (~≥80%); recommend it with its miss profile.
+   - **MANUAL** — no formula gets reasonably close *and* the schedule is just an irregular list of known dates.
+   - **MISFIT** — the dates follow a real, describable *formula* that none of the current rules express. This is the only case to escalate for a new rule.
 
-Never guess silently. If two rules both fit, say so and recommend the simpler/more-robust one.
+**Formula-first.** Default to the closest formula. Manual dates are for genuinely irregular schedules — *not* for "the dates happen to be published." If an authoritative published schedule exists, you may *mention* it as context, but it is **not by itself a reason** to choose MANUAL; prefer the formula unless it's genuinely poor. Reserve MISFIT for a genuine new *formula shape* — and first check the **Candidate new rules** list below; if the dates match a known candidate, label the misfit as that candidate's instance.
+
+Never guess silently. If two rules both fit, recommend the simpler/more-robust one.
 
 ---
 
@@ -70,8 +77,8 @@ Every N weeks (N ∈ [1..104]) counting from **this event's date** (the anchor).
 - *Example:* an ECB-style ~6-week cycle → Every 6 weeks.
 
 ### Frequency: "Manual dates"
-An explicit list of dates (no formula). Paste one per line. This is the **correct choice when no formula fits** but the future dates are known/announced. Options: a "year if not given" default, and an optional "resolve to N business/calendar days before each pasted date" shift.
-- Use this as the deliberate fallback — it is *not* a misfit, it's a valid representation. Reserve `⚠️ NO RULE FITS` for when even the pattern itself is something the app can't express as a formula *and* you don't just want to list dates.
+An explicit list of dates (no formula). Paste one per line. Options: a "year if not given" default, and an optional "resolve to N business/calendar days before each pasted date" shift.
+- Reserve this for **genuinely irregular** schedules that no formula (clean or approximate) captures. Do **not** pick manual just because an official schedule is published — a formula that's ~≥80% right, adjusted as exceptions approach, is lower-maintenance across many events than a date list you re-pull every year.
 
 ---
 
@@ -93,7 +100,24 @@ CHECK: next 3 dates this rule produces → <d1>, <d2>, <d3>
 NOTES: <e.g. "Mar 2026 shifted from the 3rd to the 4th because of a holiday — expected.">
 ```
 
+## Output template — APPROXIMATE FIT (the usual answer for imperfect-but-close formulas)
+
+```
+EVENT: <name>
+BEST FORMULA: <plain-English, e.g. "1st Friday of every month">
+ACCURACY: ~<pct>% over the sample (<hits> of <total>)
+SET IN APP:
+  Frequency / Months / On / Params: <exact values, as in FIT>
+ATTACH: <holiday calendar(s) to attach, if misses are holiday-driven — e.g. "US">
+MISSES (what you'll adjust as they approach):
+  - <condition> → formula gives <X>, actual <Y>   (e.g. "the ~1–2 months/yr it's the 2nd Friday")
+  - holiday-driven shifts will surface as the ⚠️ flag once the calendar is attached
+CHECK: next 3 dates this rule produces → <d1>, <d2>, <d3>
+```
+
 ## Output template — MISFIT (bring this to the dev chat)
+
+First check the **Candidate new rules** list below — if the shape matches, name that candidate and add this event as an instance.
 
 ```
 ⚠️ NO EXISTING RULE FITS
@@ -115,7 +139,19 @@ PROPOSED NEW RULE (draft spec for the engine):
   definition: <how to compute the date for a given month>
 ```
 
-If the pattern *could* be represented as a plain list of known future dates and you don't need a formula, prefer **Manual dates** over a MISFIT — only escalate when a genuine new formula type is warranted.
+Order of preference: **clean FIT → approximate FIT → MANUAL (only if genuinely irregular) → MISFIT (only for a real new formula shape).**
+
+---
+
+## Candidate new rules to watch
+
+Misfit *shapes* seen so far. If an event's dates match one of these, label the MISFIT with the candidate name and add the event under its instances. **Reuse — not complexity — decides when we build one:** a complex rule serving one event isn't worth it; the same rule serving several is. We build a candidate once 2–3+ events share its shape.
+
+### Candidate #1 — `reference_week` (aka `nth_weekday_after_reference_week`)
+- **Shape:** the Nth [weekday] after the end of the Sun–Sat week containing the Dth of a reference month (usually the previous month), with a holiday roll to the previous business day. The release day-of-month wanders (often ~1st–10th) — usually, but not always, the 1st [weekday] of the month.
+- **Instances:** US Non-Farm Payrolls / Employment Situation (ref D=12, previous month, 3rd Friday, US-federal holiday roll — the BLS "third Friday after the reference week" methodology).
+- **Status:** NOT built (NFP-only so far). **Interim:** use `1st Friday` + attach the US holiday calendar; adjust the ~1–2 "2nd Friday" misses a year on confirm. Revisit building it when 2–3+ events share this shape.
+- **If built:** leave out ad-hoc exception hacks (e.g. an "early-January +7" fudge). Those are discretionary schedule shifts (benchmark revisions, shutdowns) that no formula should model — handle them per-occurrence.
 
 ---
 
