@@ -148,10 +148,15 @@ Order of preference: **clean FIT → approximate FIT → MANUAL (only if genuine
 Misfit *shapes* seen so far. If an event's dates match one of these, label the MISFIT with the candidate name and add the event under its instances. **Reuse — not complexity — decides when we build one:** a complex rule serving one event isn't worth it; the same rule serving several is. We build a candidate once 2–3+ events share its shape.
 
 ### Candidate #1 — `reference_week` (aka `nth_weekday_after_reference_week`)
-- **Shape:** the Nth [weekday] after the end of the Sun–Sat week containing the Dth of a reference month (usually the previous month), with a holiday roll to the previous business day. The release day-of-month wanders (often ~1st–10th) — usually, but not always, the 1st [weekday] of the month.
-- **Instances:** US Non-Farm Payrolls / Employment Situation (ref D=12, previous month, 3rd Friday, US-federal holiday roll — the BLS "third Friday after the reference week" methodology).
-- **Status:** NOT built (NFP-only so far). **Interim:** use `1st Friday` + attach the US holiday calendar; adjust the ~1–2 "2nd Friday" misses a year on confirm. Revisit building it when 2–3+ events share this shape.
-- **If built:** leave out ad-hoc exception hacks (e.g. an "early-January +7" fudge). Those are discretionary schedule shifts (benchmark revisions, shutdowns) that no formula should model — handle them per-occurrence.
+- **Shape:** the Nth [weekday] after the end of the Sun–Sat week containing the Dth of a reference month (usually the previous month), with a holiday roll. The release day-of-month wanders — usually, but not always, the 1st [weekday] of the month. Some events sit at a fixed **offset from** this anchor.
+- **Instances (2 — approaching the build threshold):**
+  1. **US Non-Farm Payrolls / Employment Situation** — ref D=12, prev month, 3rd Friday, US-federal holiday roll (BLS "third Friday after the reference week"). *Interim:* `1st Friday` + US holidays (~85%).
+  2. **US ADP Nonfarm Employment Change** — the NFP anchor **minus 2 days** (the Wednesday of NFP week); if the Monday of that week is a federal holiday (Labor Day), minus 1 day instead. *Interim:* `1st Wednesday` + US holidays (~73%).
+- **Design options when we build it:**
+  - **(a)** add a `result_offset_days` input to `reference_week` (NFP = 0, ADP = −2) plus the Labor-Day clause — self-contained, simple.
+  - **(b)** a more general **"offset from another series' occurrence"** primitive (ADP = NFP's date − 2 days). More powerful — many events cluster around anchors (ADP↔NFP; events keyed to FOMC/CPI) — but a bigger change (one series depends on another → dependency + re-projection ordering). Decide (a) vs (b) at build time.
+- **Status:** NOT built. Build when clearly worth it (~3+ instances, or when (b) would serve several anchor-relative events). Use the per-instance interims above until then.
+- **If built:** leave out ad-hoc exception hacks (e.g. an "early-January +7" fudge). Discretionary shifts (benchmark revisions, shutdowns) aren't formula-modelable — handle per-occurrence.
 
 ---
 
