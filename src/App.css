@@ -2059,6 +2059,45 @@
   margin-bottom: 6px;
 }
 
+/* Series census: read-only whole-series snapshot at the top of the editor. */
+.series-census {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin-bottom: 8px;
+  font-size: 12.5px;
+}
+.census-head {
+  color: var(--text);
+}
+.census-counts {
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.census-props {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 6px;
+}
+.census-prop {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.census-label {
+  color: var(--text-dim);
+}
+.census-ok {
+  color: var(--holiday-text);
+  font-weight: 600;
+}
+.census-warn {
+  color: var(--clash-text);
+  font-weight: 600;
+}
+
 /* ============================================================
    Mobile (phones) — viewing-focused layout.
    Everything above is unchanged on desktop; these rules only

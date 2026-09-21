@@ -7,7 +7,7 @@ import { DayView } from './components/DayView'
 import { WeekView } from './components/WeekView'
 import { AgendaView } from './components/AgendaView'
 import { EventModal } from './components/EventModal'
-import type { EventTemplate } from './components/EventModal'
+import type { EventTemplate, SeriesCensus } from './components/EventModal'
 import { PriorityManager } from './components/PriorityManager'
 import type { TierDraft } from './components/PriorityManager'
 import { PushSettings } from './components/PushSettings'
@@ -60,7 +60,7 @@ import { HolidaysManager } from './components/HolidaysManager'
 import type { SoundChange } from './components/EventModal'
 import type { RecurrenceValue } from './components/RecurrenceEditor'
 import { isWindow } from './lib/events'
-import { zonedIso, partsInZone, HOME_TZ } from './lib/tz'
+import { zonedIso, partsInZone, HOME_TZ, MARKET_TZS } from './lib/tz'
 import type { RecurrenceRule } from './lib/recurrence'
 import { buildCsv, buildJson, downloadFile } from './lib/export'
 import { PRIORITY_TIERS } from './data'
@@ -365,6 +365,46 @@ function App() {
     }
     return out
   }, [events, holidayByCalDay])
+
+  // Read-only whole-series snapshot for the editor (the "census"): occurrence
+  // counts by status + whether holidays and timezone are the same across every
+  // occurrence, so drift from a partial past edit is visible at a glance.
+  const tzLabelOf = (v: string) => MARKET_TZS.find((t) => t.value === v)?.label ?? v
+  const holidayKeyLabel = (key: string) =>
+    key ? key.split('|').map((id) => calNameById.get(id) ?? '?').join(' + ') : 'none'
+  const computeCensus = (seriesId: string): SeriesCensus | undefined => {
+    const occs = (events ?? []).filter((e) => e.series_id === seriesId)
+    if (occs.length === 0) return undefined
+    const todayMid = new Date()
+    todayMid.setHours(0, 0, 0, 0)
+    let past = 0,
+      ahead = 0,
+      projected = 0,
+      skipped = 0
+    for (const e of occs) {
+      if (e.status === 'skipped') skipped++
+      else if (e.status === 'tentative') projected++
+      else if (new Date(e.starts_at) < todayMid) past++
+      else ahead++
+    }
+    // Distribution of a property across occurrences → consistent? + a summary.
+    const dist = (values: string[], labelFor: (v: string) => string) => {
+      const counts = new Map<string, number>()
+      for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1)
+      const entries = [...counts.entries()].sort((a, b) => b[1] - a[1])
+      if (entries.length <= 1) return { consistent: true, summary: labelFor(entries[0]?.[0] ?? '') }
+      return { consistent: false, summary: entries.map(([v, n]) => `${labelFor(v)} on ${n}`).join(', ') }
+    }
+    const holidays = dist(
+      occs.map((e) => [...(e.holiday_calendar_ids ?? [])].sort().join('|')),
+      holidayKeyLabel,
+    )
+    const tz = dist(
+      occs.map((e) => e.tz ?? HOME_TZ),
+      tzLabelOf,
+    )
+    return { total: occs.length, past, ahead, projected, skipped, holidays, tz }
+  }
 
   const fcEvents: EventInput[] = useMemo(
     () =>
@@ -1214,6 +1254,7 @@ function App() {
           categoryOptions={categoryOptions}
           holidayCalendars={holidayCalendars ?? []}
           holidayClashName={modal.event ? holidayClashByEvent.get(modal.event.id) : undefined}
+          census={modal.event?.series_id ? computeCensus(modal.event.series_id) : undefined}
           initialDate={modal.initialDate}
           initialTime={modal.initialTime}
           initialReminders={

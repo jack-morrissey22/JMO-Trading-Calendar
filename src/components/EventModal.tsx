@@ -13,6 +13,20 @@ import type { RecurrenceValue } from './RecurrenceEditor'
 // undefined = leave the existing sound untouched; otherwise replace/clear it.
 export type SoundChange = { data: string | null; name: string | null } | undefined
 
+// A read-only snapshot of the whole series (the "census") shown when editing a
+// series occurrence — occurrence counts + whether holidays/timezone are the same
+// across every occurrence, so you can see at a glance whether a past edit applied
+// everywhere or drifted.
+export type SeriesCensus = {
+  total: number
+  past: number
+  ahead: number
+  projected: number
+  skipped: number
+  holidays: { consistent: boolean; summary: string }
+  tz: { consistent: boolean; summary: string }
+}
+
 // A remembered event: the most recent entry of a given title, used to pre-fill
 // a new one (the "cyclical memory" — the events table itself is the memory).
 export type EventTemplate = {
@@ -53,6 +67,8 @@ export type EventModalProps = {
   holidayCalendars?: { id: string; name: string }[]
   /** If this occurrence lands on a respected holiday, its name(s) — for the ⚠️ banner. */
   holidayClashName?: string
+  /** Read-only whole-series snapshot shown when editing a series occurrence. */
+  census?: SeriesCensus
   initialDate?: string
   initialTime?: string
   initialReminders?: ReminderDraft[]
@@ -101,6 +117,7 @@ export function EventModal({
   categoryOptions,
   holidayCalendars,
   holidayClashName,
+  census,
   initialDate,
   initialTime,
   initialReminders,
@@ -325,6 +342,32 @@ export function EventModal({
           <div className="clash-banner">
             ⚠️ This occurrence falls on <strong>{holidayClashName}</strong> — a holiday it respects.
             Adjust the date if the market is closed.
+          </div>
+        )}
+
+        {census && (
+          <div className="series-census">
+            <div className="census-head">
+              <strong>This series</strong> · {census.total} occurrence{census.total === 1 ? '' : 's'}
+            </div>
+            <div className="census-counts">
+              {census.past} past · {census.ahead} confirmed ahead · {census.projected} projected
+              {census.skipped ? ` · ${census.skipped} skipped` : ''}
+            </div>
+            <div className="census-props">
+              <span className="census-prop">
+                <span className="census-label">Holidays</span>
+                <span className={census.holidays.consistent ? 'census-ok' : 'census-warn'}>
+                  {census.holidays.consistent ? `${census.holidays.summary} ✓` : `⚠️ ${census.holidays.summary}`}
+                </span>
+              </span>
+              <span className="census-prop">
+                <span className="census-label">Timezone</span>
+                <span className={census.tz.consistent ? 'census-ok' : 'census-warn'}>
+                  {census.tz.consistent ? `${census.tz.summary} ✓` : `⚠️ ${census.tz.summary}`}
+                </span>
+              </span>
+            </div>
           </div>
         )}
 
