@@ -1944,6 +1944,30 @@
   accent-color: var(--holiday-text);
 }
 
+/* Holiday roster: per-row + bulk calendar chips (reuses tz-modal layout). */
+.hol-roster-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.hol-roster-bulk {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hol-roster-row {
+  align-items: flex-start;
+}
+.hol-roster-row .hol-roster-chips {
+  flex: 1;
+  justify-content: flex-end;
+}
+.hol-roster-none {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
 /* Landing-on-holiday flag (Phase 3). */
 .clash-flag {
   font-size: 0.9em;

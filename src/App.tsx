@@ -53,6 +53,7 @@ import { EMPTY_FILTERS } from './lib/api'
 import { FiltersModal } from './components/FiltersModal'
 import { FindModal } from './components/FindModal'
 import { TimeZonesManager } from './components/TimeZonesManager'
+import { HolidayRosterManager } from './components/HolidayRosterManager'
 import { HolidaysManager } from './components/HolidaysManager'
 import type { SoundChange } from './components/EventModal'
 import type { RecurrenceValue } from './components/RecurrenceEditor'
@@ -181,6 +182,7 @@ function App() {
   const [showFilters, setShowFilters] = useState(false)
   const [showFind, setShowFind] = useState(false)
   const [showTz, setShowTz] = useState(false)
+  const [showHolidayRoster, setShowHolidayRoster] = useState(false)
   const [showHolidays, setShowHolidays] = useState(false)
   // Mobile-only: collapse the utility buttons and priority key behind toggles.
   const [menuOpen, setMenuOpen] = useState(false)
@@ -708,6 +710,30 @@ function App() {
     },
   })
 
+  // Bulk-assign respected holiday calendars across series (the Holiday roster).
+  // For each series: set its holiday_calendar_ids, propagate to every occurrence
+  // (so the flag shows on confirmed ones too), then re-project the future
+  // holiday-aware — identical to "Update repeat & re-project" but done in bulk.
+  const applyHolidayRosterMut = useMutation({
+    mutationFn: async (changes: { seriesId: string; ids: string[] }[]) => {
+      for (const c of changes) {
+        const s = await updateSeries(c.seriesId, { holiday_calendar_ids: c.ids })
+        await setSeriesEventsHolidays(c.seriesId, c.ids)
+        await deleteSeriesTentatives(c.seriesId)
+        const own = (events ?? []).filter(
+          (e) => e.series_id === c.seriesId && e.status !== 'tentative',
+        )
+        const existing = new Set(own.map((e) => fmtDate(new Date(e.starts_at))))
+        const { from, to } = boundsFor(own, s.rule, s.horizon_months)
+        await projectSeries(s, existing, from, to, holidaySetFor(c.ids))
+      }
+    },
+    onSuccess: () => {
+      invalidateAll()
+      setShowHolidayRoster(false)
+    },
+  })
+
   // Store a note on the series (future occurrences inherit it) and copy it onto
   // this + all later existing occurrences.
   const applyNotesMut = useMutation({
@@ -985,6 +1011,14 @@ function App() {
               </button>
               <button className="header-btn" onClick={() => setShowHolidays(true)}>
                 📅 Holidays
+              </button>
+              <button
+                className="header-btn"
+                onClick={() => setShowHolidayRoster(true)}
+                disabled={!series || series.length === 0 || !holidayCalendars || holidayCalendars.length === 0}
+                title="Assign holiday calendars across your repeating events"
+              >
+                🗓 Holiday roster
               </button>
               <button className="header-btn" onClick={() => setShowPush(true)}>
                 🔔 Notifications
@@ -1281,6 +1315,16 @@ function App() {
             queryClient.invalidateQueries({ queryKey: ['holidays'] })
           }}
           onClose={() => setShowHolidays(false)}
+        />
+      )}
+
+      {showHolidayRoster && (
+        <HolidayRosterManager
+          series={series ?? []}
+          calendars={holidayCalendars ?? []}
+          busy={applyHolidayRosterMut.isPending}
+          onApply={(changes) => applyHolidayRosterMut.mutate(changes)}
+          onClose={() => setShowHolidayRoster(false)}
         />
       )}
     </div>
