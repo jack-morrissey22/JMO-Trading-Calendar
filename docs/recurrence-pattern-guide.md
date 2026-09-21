@@ -1,0 +1,128 @@
+# JMO Calendar — recurrence pattern mapping guide
+
+**Reflects the app's pattern set as of 2026-09-21 (commit a8354ec).**
+If the app gains a new pattern type, this file is updated in the dev chat and re-stamped.
+
+---
+
+## How to use this
+
+1. Open a **fresh Claude chat** (a plain claude.ai chat is fine — no codebase needed).
+2. Paste this **entire file** as the first message.
+3. Then, one event at a time, paste the event's name and its **past release dates** (as many as you have, `YYYY-MM-DD` or any clear format).
+4. Claude returns **either** an exact rule to set in the app **or** a `⚠️ NO RULE FITS` report.
+5. You apply the FIT rules in the app (see "Applying a rule" at the bottom). You collect the MISFIT reports and bring them to the **dev chat** to design new pattern types.
+
+**The single most important instruction to the assistant using this guide:** your job is to find the *true* pattern, not to make it fit. If none of the rules below reproduces the past dates, you MUST say so and characterise the real pattern — never present an approximate rule as a match. Getting a square peg into a round hole here is the failure mode we are explicitly avoiding.
+
+---
+
+## Your task (assistant)
+
+Given a list of past dates for one recurring event:
+
+1. **Extract structure.** For each date note: weekday, day-of-month, business-day index counting from the 1st (weekdays only), business-day index counting back from month-end, and which week of the month it is (1st/2nd/… occurrence of that weekday). Also note which months of the year appear, and the gaps between dates.
+2. **Form a hypothesis** about the invariant that holds across all dates (e.g. "always the 2nd Thursday", "always the 3rd business day", "every 6 weeks").
+3. **Test it as one of the rules below** by computing what that rule would produce for each historical month and comparing to the actual dates.
+4. A rule **fits only if it reproduces every past date** — with one allowance: the three *business-day* rules and *day-of-month with a weekend roll* legitimately shift around weekends and **market holidays**. So a date that moved only because of a holiday or weekend still counts as a fit for those rules. (You won't know the user's exact holiday calendar; reason from well-known market holidays, and if a single deviation is plausibly a holiday shift, treat it as a fit and say so.)
+5. Output a **FIT** or a **MISFIT** using the templates below.
+
+Never guess silently. If two rules both fit, say so and recommend the simpler/more-robust one.
+
+---
+
+## The rule catalogue
+
+Every pattern the app supports today. UI path is: open any occurrence of the series → **Repeats** is on → set **Frequency**, then (for Monthly-based) **Months** and **On**.
+
+### Frequency: "Monthly-based"
+First pick **Months**: `Every month` · `Quarterly (Mar/Jun/Sep/Dec)` · `Once a year` (+ month) · `Specific months…` (+ month chips). Then pick **On** (the day-rule):
+
+1. **Nth weekday** — the *Nth* [Mon–Sun] of the month. N ∈ {1st, 2nd, 3rd, 4th, last}.
+   - *Semantics:* if a month has no 5th of that weekday, that month is skipped (N=last always exists).
+   - *Example:* "2nd Thursday" → Feb 2026 = 12th, Mar 2026 = 12th, Apr 2026 = 9th.
+
+2. **Day of month** — a fixed calendar day [1–31], with a weekend **roll**: `→ next weekday`, `→ prev weekday`, `→ nearest weekday (stay in month)`, or `keep as-is`.
+   - *Semantics:* if the day exceeds the month length and roll ≠ nearest, that month is skipped; `nearest` clamps to the month's last weekday.
+   - *Example:* "the 15th, roll → next" → if the 15th is a Saturday, lands on Monday the 17th.
+
+3. **Nth business day** — the *Nth* business day counting **from the 1st** (1 = the first weekday of the month). N ∈ [1..23].
+   - *Semantics:* business day = a weekday that is **not** a respected holiday (holiday-aware). Skips weekends and the series' holidays.
+   - *Example:* "3rd business day" of a month starting on a Sunday → Wed the 4th (Mon 2nd = 1st biz day, Tue 3rd = 2nd, Wed 4th = 3rd), unless one of those is a holiday.
+
+4. **Nth-last business day** — the *Nth* business day counting **back from month-end** (1 = the last weekday, 2 = second-to-last…). N ∈ [1..23]. Holiday-aware.
+   - *Example:* "last business day" → the final weekday of the month that isn't a holiday.
+
+5. **Business days before a date** — *N* business days **before the Dth** calendar day. Inputs: N ∈ [0..20], D ∈ [1..31]. Holiday-aware.
+   - *Semantics:* start at the Dth (clamped to month-end if the month is short), then step back N business days. Classic for expiries ("trading ceases 2 business days before the 15th").
+   - *Example:* "2 business days before the 15th" → if the 15th is a Wednesday, → Monday the 13th.
+
+6. **Offset from a date** — *±N* calendar days from the Dth, then **snap to the nearest weekday**. Inputs: offset (can be negative), D ∈ [1..31].
+   - *Semantics:* NOT month-bounded and NOT holiday-aware — a plain calendar offset with a weekend snap (Sat→Fri, Sun→Mon). Use only when the others don't express it.
+   - *Example:* "7 days before the 25th (nearest weekday)".
+
+### Frequency: "Weekly"
+Pick one or more weekdays. Fires every week on those days. No monthly logic.
+- *Example:* jobless claims every Thursday → Weekly, Thu.
+
+### Frequency: "Every N weeks"
+Every N weeks (N ∈ [1..104]) counting from **this event's date** (the anchor). Good for cadence events with no calendar-month logic (e.g. ~6-week central-bank cycles). Projects "N occurrences ahead" rather than months ahead.
+- *Example:* an ECB-style ~6-week cycle → Every 6 weeks.
+
+### Frequency: "Manual dates"
+An explicit list of dates (no formula). Paste one per line. This is the **correct choice when no formula fits** but the future dates are known/announced. Options: a "year if not given" default, and an optional "resolve to N business/calendar days before each pasted date" shift.
+- Use this as the deliberate fallback — it is *not* a misfit, it's a valid representation. Reserve `⚠️ NO RULE FITS` for when even the pattern itself is something the app can't express as a formula *and* you don't just want to list dates.
+
+---
+
+## Output template — FIT
+
+```
+EVENT: <name>
+PATTERN: <plain-English description, e.g. "2nd Thursday of every month">
+CONFIDENCE: high | medium (say why if not high)
+
+SET IN APP:
+  Frequency: <Monthly-based | Weekly | Every N weeks | Manual dates>
+  Months:    <Every month | Quarterly | Once a year (<Mon>) | Specific: <list>>   (monthly only)
+  On:        <Nth weekday | Day of month | Nth business day | Nth-last business day | Business days before a date | Offset from a date>
+  Params:    <exact values, e.g. "2nd, Thursday"  /  "3 business days, from the 1st"  /  "2 business days before the 15th">
+
+CHECK: next 3 dates this rule produces → <d1>, <d2>, <d3>
+  (Confirm these look right before applying. Holiday shifts are handled by the app.)
+NOTES: <e.g. "Mar 2026 shifted from the 3rd to the 4th because of a holiday — expected.">
+```
+
+## Output template — MISFIT (bring this to the dev chat)
+
+```
+⚠️ NO EXISTING RULE FITS
+EVENT: <name>
+PAST DATES: <the dates>
+STRUCTURE OBSERVED:
+  - weekdays: <...>
+  - day-of-month: <...>
+  - biz-day-from-start / from-end: <...>
+  - week-of-month: <...>
+  - month coverage: <...>
+THE REAL PATTERN (best characterisation): <precise plain-English rule, e.g.
+  "the Wednesday of the week containing the 15th" or
+  "the first Friday that is at least 5 business days after month start">
+WHY NO RULE FITS: <which rules were tested and how each failed>
+PROPOSED NEW RULE (draft spec for the engine):
+  name: <snake_case, e.g. weekday_of_week_containing_dom>
+  inputs: <params>
+  definition: <how to compute the date for a given month>
+```
+
+If the pattern *could* be represented as a plain list of known future dates and you don't need a formula, prefer **Manual dates** over a MISFIT — only escalate when a genuine new formula type is warranted.
+
+---
+
+## Applying a rule in the app (reference for you, the user)
+
+1. Open the event — **any occurrence, it doesn't matter which** (the pattern lives on the series, not the occurrence).
+2. In the pattern editor set Frequency / Months / On / Params as above.
+3. Click **Update repeat & re-project.** This regenerates all *future* projections on the new pattern. Your time, alerts, priority, category, holiday calendars and sound carry forward automatically.
+4. Only cleanup: if you had *confirmed* future occurrences on the old dates, they're locked and won't move — delete those few strays. Tentative future ones are replaced cleanly. Use the **census** at the top of the editor to check counts.
+5. Take an **Export → JSON restore file (complete)** before a batch, so it's all undoable.
