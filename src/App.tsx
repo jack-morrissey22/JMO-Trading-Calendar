@@ -42,6 +42,7 @@ import {
   setEventStatus,
   setSeriesEventsSound,
   setSeriesEventsHolidays,
+  fetchRawBackup,
   skipEvent,
   stopSeries,
   updateEvent,
@@ -54,6 +55,7 @@ import { FiltersModal } from './components/FiltersModal'
 import { FindModal } from './components/FindModal'
 import { TimeZonesManager } from './components/TimeZonesManager'
 import { HolidayRosterManager } from './components/HolidayRosterManager'
+import { RestoreManager } from './components/RestoreManager'
 import { HolidaysManager } from './components/HolidaysManager'
 import type { SoundChange } from './components/EventModal'
 import type { RecurrenceValue } from './components/RecurrenceEditor'
@@ -183,6 +185,7 @@ function App() {
   const [showFind, setShowFind] = useState(false)
   const [showTz, setShowTz] = useState(false)
   const [showHolidayRoster, setShowHolidayRoster] = useState(false)
+  const [showRestore, setShowRestore] = useState(false)
   const [showHolidays, setShowHolidays] = useState(false)
   // Mobile-only: collapse the utility buttons and priority key behind toggles.
   const [menuOpen, setMenuOpen] = useState(false)
@@ -924,6 +927,23 @@ function App() {
     }
     setShowExport(false)
   }
+  // A complete, restore-ready snapshot (raw rows incl. ids, links and audio) —
+  // the same shape as the weekly backup email, downloadable on demand.
+  const [backingUp, setBackingUp] = useState(false)
+  const downloadRestoreBackup = async () => {
+    setShowExport(false)
+    setBackingUp(true)
+    try {
+      const backup = await fetchRawBackup()
+      downloadFile(
+        `jmo-restore-${fmtDate(new Date())}.json`,
+        JSON.stringify(backup, null, 2),
+        'application/json',
+      )
+    } finally {
+      setBackingUp(false)
+    }
+  }
 
   const title =
     view === 'day'
@@ -1029,7 +1049,7 @@ function App() {
                   onClick={() => setShowExport((s) => !s)}
                   onBlur={() => setTimeout(() => setShowExport(false), 150)}
                 >
-                  ⬇ Export
+                  {backingUp ? '⬇ Backing up…' : '⬇ Export'}
                 </button>
                 {showExport && (
                   <div className="export-menu">
@@ -1037,7 +1057,14 @@ function App() {
                       CSV (spreadsheet)
                     </button>
                     <button className="export-item" onMouseDown={(e) => e.preventDefault()} onClick={() => exportAs('json')}>
-                      JSON (full backup)
+                      JSON (readable summary)
+                    </button>
+                    <div className="export-sep" />
+                    <button className="export-item" onMouseDown={(e) => e.preventDefault()} onClick={downloadRestoreBackup}>
+                      JSON restore file (complete)
+                    </button>
+                    <button className="export-item" onMouseDown={(e) => e.preventDefault()} onClick={() => { setShowExport(false); setShowRestore(true) }}>
+                      ♻ Restore from backup…
                     </button>
                   </div>
                 )}
@@ -1325,6 +1352,13 @@ function App() {
           busy={applyHolidayRosterMut.isPending}
           onApply={(changes) => applyHolidayRosterMut.mutate(changes)}
           onClose={() => setShowHolidayRoster(false)}
+        />
+      )}
+
+      {showRestore && (
+        <RestoreManager
+          onRestored={invalidateAll}
+          onClose={() => setShowRestore(false)}
         />
       )}
     </div>

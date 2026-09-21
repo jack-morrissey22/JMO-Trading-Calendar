@@ -723,3 +723,126 @@ export async function migrateSeriesTz(series: SeriesRow, newTz: string): Promise
   }
   return retimed
 }
+
+// ---------------------------------------------------------------------------
+// Full backup + non-destructive restore.
+//
+// The restore file is a COMPLETE raw dump of the three tables (matching the
+// weekly backup email): every column, including ids, series_id / event_id links
+// and sound_data. Restore only ever INSERTS rows whose id is currently missing —
+// it never updates or deletes anything that still exists, so re-importing an old
+// backup can only add things back, never revert your recent edits.
+// ---------------------------------------------------------------------------
+
+const RAW_PAGE = 1000
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Row = Record<string, any>
+
+async function fetchAllRaw(table: string, columns = '*'): Promise<Row[]> {
+  const rows: Row[] = []
+  for (let from = 0; ; from += RAW_PAGE) {
+    const { data, error } = await supabase
+      .from(table)
+      .select(columns)
+      .order('id')
+      .range(from, from + RAW_PAGE - 1)
+    if (error) throw error
+    const batch = (data ?? []) as Row[]
+    rows.push(...batch)
+    if (batch.length < RAW_PAGE) break
+  }
+  return rows
+}
+
+export type RawBackup = {
+  app: string
+  backup_version: number
+  exported_at: string
+  counts: { events: number; reminders: number; series: number }
+  events: Row[]
+  reminders: Row[]
+  series: Row[]
+}
+
+export type RestorePlan = {
+  series: { total: number; missing: number }
+  events: { total: number; missing: number }
+  reminders: { total: number; missing: number }
+}
+
+/** A complete, restore-ready snapshot of the current account (raw rows). */
+export async function fetchRawBackup(): Promise<RawBackup> {
+  const [events, reminders, series] = await Promise.all([
+    fetchAllRaw('events'),
+    fetchAllRaw('reminders'),
+    fetchAllRaw('series'),
+  ])
+  return {
+    app: 'JMO Trading Calendar',
+    backup_version: 1,
+    exported_at: new Date().toISOString(),
+    counts: { events: events.length, reminders: reminders.length, series: series.length },
+    events,
+    reminders,
+    series,
+  }
+}
+
+/** True if x looks like a restore backup (the three id-bearing row arrays). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isRawBackup(x: any): x is RawBackup {
+  const ok = (a: unknown) => Array.isArray(a) && (a.length === 0 || !!(a[0] as Row)?.id)
+  return !!x && typeof x === 'object' && ok(x.events) && ok(x.series) && ok(x.reminders)
+}
+
+async function existingIds(table: string): Promise<Set<string>> {
+  const rows = await fetchAllRaw(table, 'id')
+  return new Set(rows.map((r) => r.id as string))
+}
+
+const missingRows = (rows: Row[], have: Set<string>) =>
+  rows.filter((r) => r.id && !have.has(r.id as string))
+
+/** Count how many rows in the backup are currently missing (non-mutating). */
+export async function analyzeBackup(backup: RawBackup): Promise<RestorePlan> {
+  const [se, ee, re] = await Promise.all([
+    existingIds('series'),
+    existingIds('events'),
+    existingIds('reminders'),
+  ])
+  return {
+    series: { total: backup.series.length, missing: missingRows(backup.series, se).length },
+    events: { total: backup.events.length, missing: missingRows(backup.events, ee).length },
+    reminders: { total: backup.reminders.length, missing: missingRows(backup.reminders, re).length },
+  }
+}
+
+/** Re-insert only the rows whose id is currently missing. Never touches existing
+ *  rows (ON CONFLICT DO NOTHING). Order respects FKs: series → events → reminders. */
+export async function restoreFromBackup(backup: RawBackup): Promise<RestorePlan> {
+  const { data: userRes } = await supabase.auth.getUser()
+  const uid = userRes.user?.id
+  const CHUNK = 500
+
+  const restore = async (table: string, rows: Row[]): Promise<number> => {
+    const have = await existingIds(table)
+    const missing = missingRows(rows, have).map((r) => ({ ...r, user_id: uid }))
+    for (let i = 0; i < missing.length; i += CHUNK) {
+      const { error } = await supabase
+        .from(table)
+        .upsert(missing.slice(i, i + CHUNK), { onConflict: 'id', ignoreDuplicates: true })
+      if (error) throw error
+    }
+    return missing.length
+  }
+
+  const series = await restore('series', backup.series)
+  const events = await restore('events', backup.events)
+  const reminders = await restore('reminders', backup.reminders)
+  return {
+    series: { total: backup.series.length, missing: series },
+    events: { total: backup.events.length, missing: events },
+    reminders: { total: backup.reminders.length, missing: reminders },
+  }
+}
