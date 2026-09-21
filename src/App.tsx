@@ -936,7 +936,7 @@ function App() {
     try {
       const backup = await fetchRawBackup()
       downloadFile(
-        `jmo-restore-${fmtDate(new Date())}.json`,
+        `jmo_calendar-restore-${fmtDate(new Date())}.json`,
         JSON.stringify(backup, null, 2),
         'application/json',
       )
