@@ -1,6 +1,6 @@
 # JMO Calendar — recurrence pattern mapping guide
 
-**Reflects the app's pattern set as of 2026-09-22 (rev 3).**
+**Reflects the app's pattern set as of 2026-09-22 (rev 4).**
 If the app gains a new pattern type, this file is updated in the dev chat and re-stamped.
 
 ---
@@ -68,9 +68,9 @@ First pick **Months**: `Every month` · `Quarterly (Mar/Jun/Sep/Dec)` · `Once a
    - *Semantics:* NOT month-bounded and NOT holiday-aware — a plain calendar offset with a weekend snap (Sat→Fri, Sun→Mon). Use only when the others don't express it.
    - *Example:* "7 days before the 25th (nearest weekday)".
 
-7. **First weekday on/after a date** — the first [weekday] on or after the Dth, then rolled off weekends and respected holidays to the next business day. Inputs: weekday, D ∈ [1..31]. **Holiday-aware** (attach a holiday calendar so the roll works).
-   - *Semantics:* this is the true form of many mid-month stat releases that *look* like "Nth weekday" but actually anchor to a date — they coincide most months and diverge when the month starts on a day that puts the 2nd occurrence of the weekday on/after D. Prefer this over "Nth weekday" when the release tracks a day-of-month.
-   - *Example:* Canada CPI = "first Monday on/after the 14th" + Canada (TSX): Sep 2026 → 14th; Feb → Tue 17th (Family Day rolled); Dec 2026 → 14th.
+7. **First weekday on/after a date** — the first [weekday] on or after the Dth, then rolled off weekends and respected holidays. Inputs: weekday, D ∈ [1..31], and a **roll direction**: `holiday → next business day` (forward, default — stat releases move *later*) or `holiday → previous business day` (backward — **Treasury auctions** move *earlier*). **Holiday-aware** (attach a holiday calendar so the roll works).
+   - *Semantics:* the true form of many mid-month stat releases (and Treasury auctions) that *look* like "Nth weekday" but actually anchor to a date — they coincide most months and diverge when the month starts on a day that puts the 2nd occurrence of the weekday on/after D. Prefer this over "Nth weekday" when the release tracks a day-of-month.
+   - *Examples:* Canada CPI = "first Monday on/after the 14th", forward roll, + Canada (TSX): Feb → Tue 17th (Family Day). US 10-Year auction = "first Wednesday on/after the 6th", **backward** roll, + US Bond Market (SIFMA): Nov 2026 → Tue 10th (rolls earlier off Veterans Day).
 
 ### Frequency: "Weekly"
 Pick one or more weekdays. Fires every week on those days. No monthly logic.
@@ -168,6 +168,20 @@ Misfit *shapes* seen so far. If an event's dates match one of these, label the M
   1. **UK GDP (Monthly)** — group A (Jan/Apr/Jul/Oct): looks like "3rd Thursday", likely "first Thursday on/after ~the 11th". Divergence test: **Jan 2027** (3rd Thu = 21st vs on/after-11 = 14th).
   2. **Canada CPI** — Monday regime (since Nov 2025): looks like "3rd Monday", likely "first Monday on/after the 14th". Divergence test: **Dec 2026** (3rd Mon = 21st vs on/after-14 = 14th). (June runs a week later → its own 4th-weekday series.)
 - **Status: BUILT (2026-09-22)** as rule #7 above (`First weekday on/after a date`, holiday-rolled). Canada CPI's Sep 2026 already confirmed the day-of-month anchor (released the 14th, not the 21st), so **use rule #7 for Canada CPI now** (group A: first Monday on/after the 14th; June group B: on/after the 21st — or keep June as 4th Monday). **UK GDP:** hold on the `3rd Thursday` interim until **Jan 2027** confirms the earlier date, then switch group A to "first Thursday on/after the 11th". Attach the holiday calendar so the roll works.
+
+---
+
+## Holiday calendars — which to attach
+
+Attaching the right calendar matters: business-day and rule #7 patterns skip/roll off it, and landings flag against it. A calendar is just "days this event avoids."
+
+- **US (Federal)** — US government/agency releases: BLS (NFP, ADP, CPI, PPI, JOLTS), EIA (DOE, Nat Gas Storage). Closes Columbus/Veterans; open Good Friday.
+- **US Market (NYSE)** — US exchange/price releases: ISM, most market data. Closes Good Friday; open Columbus/Veterans.
+- **US Bond Market (SIFMA)** — US Treasury auctions & bond-market events. Closes all federal holidays **and** Good Friday. Pair with rule #7's **backward** roll (auctions move earlier off a bond holiday).
+- **Canada (TSX)** — Canadian releases (StatCan CPI, etc.). Includes Family Day & Victoria Day (the sparse federal "Canada" omits them).
+- **UK / Germany / France / Japan / Singapore / Switzerland / China / Spain** — that country's public holidays.
+
+Tip: you can create ad-hoc calendars too — e.g. an **FOMC decision days** calendar attached to the US 10-Year auction so it *flags* when the auction lands on an FOMC day (the 10Y moves to Tuesday; the 30Y stays).
 
 ---
 
