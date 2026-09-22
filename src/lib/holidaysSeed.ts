@@ -1490,5 +1490,139 @@ export const HOLIDAY_SEED: Record<string, SeedHoliday[]> = {
       "day": "2028-12-25",
       "name": "Christmas Day"
     }
+  ],
+  "Canada (TSX)": [
+    {
+      "day": "2026-01-01",
+      "name": "New Year's Day"
+    },
+    {
+      "day": "2026-02-16",
+      "name": "Family Day"
+    },
+    {
+      "day": "2026-04-03",
+      "name": "Good Friday"
+    },
+    {
+      "day": "2026-04-06",
+      "name": "Easter Monday"
+    },
+    {
+      "day": "2026-05-18",
+      "name": "Victoria Day"
+    },
+    {
+      "day": "2026-07-01",
+      "name": "Canada Day"
+    },
+    {
+      "day": "2026-08-03",
+      "name": "Civic Holiday"
+    },
+    {
+      "day": "2026-09-07",
+      "name": "Labour Day"
+    },
+    {
+      "day": "2026-10-12",
+      "name": "Thanksgiving"
+    },
+    {
+      "day": "2026-12-25",
+      "name": "Christmas Day"
+    },
+    {
+      "day": "2026-12-26",
+      "name": "Boxing Day"
+    },
+    {
+      "day": "2027-01-01",
+      "name": "New Year's Day"
+    },
+    {
+      "day": "2027-02-15",
+      "name": "Family Day"
+    },
+    {
+      "day": "2027-03-26",
+      "name": "Good Friday"
+    },
+    {
+      "day": "2027-03-29",
+      "name": "Easter Monday"
+    },
+    {
+      "day": "2027-05-24",
+      "name": "Victoria Day"
+    },
+    {
+      "day": "2027-07-01",
+      "name": "Canada Day"
+    },
+    {
+      "day": "2027-08-02",
+      "name": "Civic Holiday"
+    },
+    {
+      "day": "2027-09-06",
+      "name": "Labour Day"
+    },
+    {
+      "day": "2027-10-11",
+      "name": "Thanksgiving"
+    },
+    {
+      "day": "2027-12-25",
+      "name": "Christmas Day"
+    },
+    {
+      "day": "2027-12-26",
+      "name": "Boxing Day"
+    },
+    {
+      "day": "2028-01-01",
+      "name": "New Year's Day"
+    },
+    {
+      "day": "2028-02-21",
+      "name": "Family Day"
+    },
+    {
+      "day": "2028-04-14",
+      "name": "Good Friday"
+    },
+    {
+      "day": "2028-04-17",
+      "name": "Easter Monday"
+    },
+    {
+      "day": "2028-05-22",
+      "name": "Victoria Day"
+    },
+    {
+      "day": "2028-07-01",
+      "name": "Canada Day"
+    },
+    {
+      "day": "2028-08-07",
+      "name": "Civic Holiday"
+    },
+    {
+      "day": "2028-09-04",
+      "name": "Labour Day"
+    },
+    {
+      "day": "2028-10-09",
+      "name": "Thanksgiving"
+    },
+    {
+      "day": "2028-12-25",
+      "name": "Christmas Day"
+    },
+    {
+      "day": "2028-12-26",
+      "name": "Boxing Day"
+    }
   ]
 }

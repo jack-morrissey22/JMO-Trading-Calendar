@@ -74,6 +74,30 @@ for (const [label, code] of Object.entries(MARKETS)) {
     .map(([day, name]) => ({ day, name }))
 }
 
+// Derived "Canada (TSX)" calendar: Ontario statutory holidays (what Toronto and
+// StatCan follow — includes Family Day and Victoria Day, which the sparse federal
+// "Canada" set omits) plus the August Civic Holiday that TSX also closes for. Use
+// this for Canadian market/StatCan releases rather than the federal "Canada".
+{
+  const on = new Holidays('CA', 'ON')
+  const byDay = new Map()
+  for (const year of YEARS) {
+    for (const h of on.getHolidays(year)) {
+      if (h.type !== 'public') continue
+      const day = h.date.slice(0, 10)
+      if (!byDay.has(day)) byDay.set(day, h.name)
+    }
+    // August Civic Holiday = 1st Monday of August (TSX closes; not ON-statutory).
+    const d = new Date(year, 7, 1)
+    while (d.getDay() !== 1) d.setDate(d.getDate() + 1)
+    const civic = `${year}-08-${String(d.getDate()).padStart(2, '0')}`
+    if (!byDay.has(civic)) byDay.set(civic, 'Civic Holiday')
+  }
+  seed['Canada (TSX)'] = [...byDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, name]) => ({ day, name }))
+}
+
 const header = `// Auto-generated starter holiday data (public holidays ${YEARS[0]}-${YEARS[YEARS.length - 1]}) from the
 // date-holidays library, for one-click import in the Holidays manager. Edit there
 // afterwards to match your exact exchange calendars. Regenerate with
