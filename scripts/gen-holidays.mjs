@@ -47,6 +47,33 @@ for (const [label, code] of Object.entries(MARKETS)) {
     .map(([day, name]) => ({ day, name }))
 }
 
+// Derived "US Market (NYSE)" calendar: US federal public holidays MINUS Columbus
+// Day and Veterans Day (exchanges stay open those days), PLUS Good Friday (which
+// markets close for but is not a federal holiday). This is the right calendar for
+// exchange/market-driven releases (e.g. ISM) — distinct from the BLS/federal "US"
+// calendar (BLS releases DO happen on Good Friday, and DON'T on Columbus/Veterans).
+{
+  const us = new Holidays('US')
+  const gb = new Holidays('GB') // Good Friday is public here; its date is identical worldwide
+  const DROP = /columbus|veterans/i
+  const byDay = new Map()
+  for (const year of YEARS) {
+    for (const h of us.getHolidays(year)) {
+      if (h.type !== 'public' || DROP.test(h.name)) continue
+      const day = h.date.slice(0, 10)
+      if (!byDay.has(day)) byDay.set(day, h.name)
+    }
+    for (const h of gb.getHolidays(year)) {
+      if (h.type !== 'public' || !/good friday/i.test(h.name)) continue
+      const day = h.date.slice(0, 10)
+      if (!byDay.has(day)) byDay.set(day, 'Good Friday')
+    }
+  }
+  seed['US Market (NYSE)'] = [...byDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, name]) => ({ day, name }))
+}
+
 const header = `// Auto-generated starter holiday data (public holidays ${YEARS[0]}-${YEARS[YEARS.length - 1]}) from the
 // date-holidays library, for one-click import in the Holidays manager. Edit there
 // afterwards to match your exact exchange calendars. Regenerate with
