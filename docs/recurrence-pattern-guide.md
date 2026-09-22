@@ -158,6 +158,14 @@ Misfit *shapes* seen so far. If an event's dates match one of these, label the M
 - **Status:** NOT built. Build when clearly worth it (~3+ instances, or when (b) would serve several anchor-relative events). Use the per-instance interims above until then.
 - **If built:** leave out ad-hoc exception hacks (e.g. an "early-January +7" fudge). Discretionary shifts (benchmark revisions, shutdowns) aren't formula-modelable — handle per-occurrence.
 
+### Candidate #2 — `first_weekday_on_or_after` (weekday anchored to a day-of-month)
+- **Shape:** the first [weekday] on or after the Dth of the month (D typically ~11–14). **Easy to mistake for `Nth weekday`** — they give the same date in most months and only diverge when the month starts so that the target weekday's 2nd occurrence is already ≥ D (then "on/after D" lands a week earlier than "3rd weekday").
+- **Instances (2):**
+  1. **UK GDP (Monthly)** — group A (Jan/Apr/Jul/Oct): looks like "3rd Thursday", likely "first Thursday on/after ~the 11th". Divergence test: **Jan 2027** (3rd Thu = 21st vs on/after-11 = 14th).
+  2. **Canada CPI** — Monday regime (since Nov 2025): looks like "3rd Monday", likely "first Monday on/after the 14th". Divergence test: **Dec 2026** (3rd Mon = 21st vs on/after-14 = 14th). (June runs a week later → its own 4th-weekday series.)
+- **Interim:** use the `Nth weekday` approximation; adjust the divergent month on confirm against the source's published calendar.
+- **Status:** NOT built — but the **simplest** candidate and likely the **most broadly useful** (many mid-month stat releases anchor to a day-of-month, not an ordinal weekday). **Build gate:** confirm the divergence months (UK Jan 2027, Canada Dec 2026) actually land on the *earlier* date. If they instead land on the ordinal-weekday date, `Nth weekday` is already correct and no rule is needed. If confirmed on the earlier date, this is an easy, high-value build.
+
 ---
 
 ## Applying a rule in the app (reference for you, the user)
