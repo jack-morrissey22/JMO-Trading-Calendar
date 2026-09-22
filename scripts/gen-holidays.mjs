@@ -98,6 +98,32 @@ for (const [label, code] of Object.entries(MARKETS)) {
     .map(([day, name]) => ({ day, name }))
 }
 
+// Derived "US Bond Market (SIFMA)" calendar: all US federal public holidays (the
+// bond market closes for every one, INCLUDING Columbus & Veterans Day that NYSE
+// stays open for) PLUS Good Friday. Use for Treasury auctions / bond-market
+// events. Treasury shifts an auction EARLIER when its day is a bond holiday, so
+// pair this with rule #7's "holiday → previous business day" (backward) roll.
+{
+  const us = new Holidays('US')
+  const gb = new Holidays('GB') // Good Friday is public here; identical date worldwide
+  const byDay = new Map()
+  for (const year of YEARS) {
+    for (const h of us.getHolidays(year)) {
+      if (h.type !== 'public') continue
+      const day = h.date.slice(0, 10)
+      if (!byDay.has(day)) byDay.set(day, h.name)
+    }
+    for (const h of gb.getHolidays(year)) {
+      if (h.type !== 'public' || !/good friday/i.test(h.name)) continue
+      const day = h.date.slice(0, 10)
+      if (!byDay.has(day)) byDay.set(day, 'Good Friday')
+    }
+  }
+  seed['US Bond Market (SIFMA)'] = [...byDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, name]) => ({ day, name }))
+}
+
 const header = `// Auto-generated starter holiday data (public holidays ${YEARS[0]}-${YEARS[YEARS.length - 1]}) from the
 // date-holidays library, for one-click import in the Holidays manager. Edit there
 // afterwards to match your exact exchange calendars. Regenerate with

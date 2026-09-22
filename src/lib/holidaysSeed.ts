@@ -1624,5 +1624,171 @@ export const HOLIDAY_SEED: Record<string, SeedHoliday[]> = {
       "day": "2028-12-26",
       "name": "Boxing Day"
     }
+  ],
+  "US Bond Market (SIFMA)": [
+    {
+      "day": "2026-01-01",
+      "name": "New Year's Day"
+    },
+    {
+      "day": "2026-01-19",
+      "name": "Martin Luther King Jr. Day"
+    },
+    {
+      "day": "2026-02-16",
+      "name": "Washington's Birthday"
+    },
+    {
+      "day": "2026-04-03",
+      "name": "Good Friday"
+    },
+    {
+      "day": "2026-05-25",
+      "name": "Memorial Day"
+    },
+    {
+      "day": "2026-06-19",
+      "name": "Juneteenth"
+    },
+    {
+      "day": "2026-07-03",
+      "name": "Independence Day (substitute day)"
+    },
+    {
+      "day": "2026-07-04",
+      "name": "Independence Day"
+    },
+    {
+      "day": "2026-09-07",
+      "name": "Labor Day"
+    },
+    {
+      "day": "2026-10-12",
+      "name": "Columbus Day"
+    },
+    {
+      "day": "2026-11-11",
+      "name": "Veterans Day"
+    },
+    {
+      "day": "2026-11-26",
+      "name": "Thanksgiving Day"
+    },
+    {
+      "day": "2026-12-25",
+      "name": "Christmas Day"
+    },
+    {
+      "day": "2027-01-01",
+      "name": "New Year's Day"
+    },
+    {
+      "day": "2027-01-18",
+      "name": "Martin Luther King Jr. Day"
+    },
+    {
+      "day": "2027-02-15",
+      "name": "Washington's Birthday"
+    },
+    {
+      "day": "2027-03-26",
+      "name": "Good Friday"
+    },
+    {
+      "day": "2027-05-31",
+      "name": "Memorial Day"
+    },
+    {
+      "day": "2027-06-18",
+      "name": "Juneteenth (substitute day)"
+    },
+    {
+      "day": "2027-06-19",
+      "name": "Juneteenth"
+    },
+    {
+      "day": "2027-07-04",
+      "name": "Independence Day"
+    },
+    {
+      "day": "2027-07-05",
+      "name": "Independence Day (substitute day)"
+    },
+    {
+      "day": "2027-09-06",
+      "name": "Labor Day"
+    },
+    {
+      "day": "2027-10-11",
+      "name": "Columbus Day"
+    },
+    {
+      "day": "2027-11-11",
+      "name": "Veterans Day"
+    },
+    {
+      "day": "2027-11-25",
+      "name": "Thanksgiving Day"
+    },
+    {
+      "day": "2027-12-24",
+      "name": "Christmas Day (substitute day)"
+    },
+    {
+      "day": "2027-12-25",
+      "name": "Christmas Day"
+    },
+    {
+      "day": "2027-12-31",
+      "name": "New Year's Day (substitute day)"
+    },
+    {
+      "day": "2028-01-01",
+      "name": "New Year's Day"
+    },
+    {
+      "day": "2028-01-17",
+      "name": "Martin Luther King Jr. Day"
+    },
+    {
+      "day": "2028-02-21",
+      "name": "Washington's Birthday"
+    },
+    {
+      "day": "2028-04-14",
+      "name": "Good Friday"
+    },
+    {
+      "day": "2028-05-29",
+      "name": "Memorial Day"
+    },
+    {
+      "day": "2028-06-19",
+      "name": "Juneteenth"
+    },
+    {
+      "day": "2028-07-04",
+      "name": "Independence Day"
+    },
+    {
+      "day": "2028-09-04",
+      "name": "Labor Day"
+    },
+    {
+      "day": "2028-10-09",
+      "name": "Columbus Day"
+    },
+    {
+      "day": "2028-11-11",
+      "name": "Veterans Day"
+    },
+    {
+      "day": "2028-11-23",
+      "name": "Thanksgiving Day"
+    },
+    {
+      "day": "2028-12-25",
+      "name": "Christmas Day"
+    }
   ]
 }
