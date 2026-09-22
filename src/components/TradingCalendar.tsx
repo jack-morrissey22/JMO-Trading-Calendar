@@ -31,6 +31,7 @@ export const TradingCalendar = forwardRef<FullCalendar, Props>(function TradingC
       initialDate={initialDate}
       headerToolbar={false}
       firstDay={1}
+      fixedWeekCount={false}
       navLinks
       navLinkDayClick={(date) => onNavLinkDay(date)}
       dayMaxEvents={false}
