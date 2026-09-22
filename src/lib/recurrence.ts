@@ -10,6 +10,7 @@ export type DayRule =
   | { type: 'nth_last_bizday'; nth: number } // 1 = last weekday, 2 = 2nd-last, …
   | { type: 'offset_snap'; day: number; offsetDays: number } // anchor day-of-month ± offset, snap to nearest weekday
   | { type: 'bizdays_before_dom'; day: number; bizdays: number } // N business days BEFORE the Dth calendar day (e.g. expiries)
+  | { type: 'weekday_on_or_after'; weekday: number; day: number } // first `weekday` on/after the Dth, rolled off weekends & holidays (e.g. many mid-month stat releases)
 
 export type RecurrenceRule =
   | { mode: 'weekly'; weekdays: number[] } // 0=Sun..6=Sat
@@ -127,6 +128,17 @@ function dayInMonth(y: number, m: number, rule: DayRule, isHol: IsHol = noHol): 
         d = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1)
         if (!isWeekend(d) && !isHol(d)) k--
       }
+      return d
+    }
+    case 'weekday_on_or_after': {
+      // The first `weekday` on or after the Dth calendar day (clamp D to month
+      // end), then roll forward off weekends and holidays to the next business
+      // day — e.g. Canada CPI = first Monday on/after the 14th, moved to Tuesday
+      // when that Monday is Family Day.
+      const lastDay = new Date(y, m + 1, 0).getDate()
+      let d = new Date(y, m, Math.min(rule.day, lastDay))
+      while (d.getDay() !== rule.weekday) d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
+      while (isWeekend(d) || isHol(d)) d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
       return d
     }
   }
@@ -250,6 +262,9 @@ export function describeRule(rule: RecurrenceRule): string {
       break
     case 'bizdays_before_dom':
       day = `${d.bizdays} business day${d.bizdays === 1 ? '' : 's'} before the ${ordinalDay(d.day)}`
+      break
+    case 'weekday_on_or_after':
+      day = `the first ${WEEKDAY_NAMES[d.weekday]} on or after the ${ordinalDay(d.day)}`
       break
   }
   return `${day} of ${monthsLabel(rule.months)}`

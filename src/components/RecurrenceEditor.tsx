@@ -36,6 +36,7 @@ function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
     offsetDays: -7,
     bizDom: 15, // reference day-of-month for "N business days before the Dth"
     bizDaysBefore: 2,
+    woaDay: 14, // "first weekday on or after the Dth" anchor day-of-month
     weeklyDays: [seed.getDay()],
     horizonMonths: 3,
   }
@@ -90,6 +91,9 @@ function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
   } else if (d.type === 'bizdays_before_dom') {
     base.bizDom = d.day
     base.bizDaysBefore = d.bizdays
+  } else if (d.type === 'weekday_on_or_after') {
+    base.weekday = d.weekday
+    base.woaDay = d.day
   }
   return base
 }
@@ -196,6 +200,7 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
   const [offsetDays, setOffsetDays] = useState(D.offsetDays)
   const [bizDom, setBizDom] = useState(D.bizDom)
   const [bizDaysBefore, setBizDaysBefore] = useState(D.bizDaysBefore)
+  const [woaDay, setWoaDay] = useState(D.woaDay)
   const [weeklyDays, setWeeklyDays] = useState<number[]>(D.weeklyDays)
   const [horizonMonths, setHorizonMonths] = useState(D.horizonMonths)
 
@@ -246,12 +251,14 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
     else if (dayType === 'nth_last_bizday') day = { type: 'nth_last_bizday', nth: nthLast }
     else if (dayType === 'bizdays_before_dom')
       day = { type: 'bizdays_before_dom', day: bizDom, bizdays: bizDaysBefore }
+    else if (dayType === 'weekday_on_or_after')
+      day = { type: 'weekday_on_or_after', weekday, day: woaDay }
     else day = { type: 'offset_snap', day: offsetDay, offsetDays }
     return { mode: 'monthly', months, day }
   }, [
     repeats, mode, manualText, manualYear, manualShiftOn, manualShiftN, manualShiftUnit,
     monthsPreset, customMonths, yearlyMonth, dayType, nth,
-    weekday, dayOfMonth, roll, nthBiz, nthLast, offsetDay, offsetDays, bizDom, bizDaysBefore, weeklyDays,
+    weekday, dayOfMonth, roll, nthBiz, nthLast, offsetDay, offsetDays, bizDom, bizDaysBefore, woaDay, weeklyDays,
     intervalWeeks, intervalAnchor,
   ])
 
@@ -432,6 +439,7 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
                   <option value="nth_bizday">Nth business day</option>
                   <option value="nth_last_bizday">Nth-last business day</option>
                   <option value="bizdays_before_dom">Business days before a date</option>
+                  <option value="weekday_on_or_after">First weekday on/after a date</option>
                   <option value="offset_snap">Offset from a date</option>
                 </select>
               </div>
@@ -517,6 +525,27 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
                       onChange={(e) => setBizDom(Number(e.target.value))}
                     />
                     <span>{ordinalSuffix(bizDom)}</span>
+                  </>
+                )}
+                {dayType === 'weekday_on_or_after' && (
+                  <>
+                    <span>the first</span>
+                    <select value={weekday} onChange={(e) => setWeekday(Number(e.target.value))}>
+                      {WEEKDAYS.map((w) => (
+                        <option key={w.v} value={w.v}>
+                          {w.l}
+                        </option>
+                      ))}
+                    </select>
+                    <span>on or after the</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={woaDay}
+                      onChange={(e) => setWoaDay(Number(e.target.value))}
+                    />
+                    <span>{ordinalSuffix(woaDay)} (rolls off holidays)</span>
                   </>
                 )}
                 {dayType === 'offset_snap' && (
