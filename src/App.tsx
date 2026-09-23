@@ -133,6 +133,9 @@ function boundsFor(
   // count — so "project 1 ahead" keeps exactly the next occurrence materialised,
   // independent of how many weeks the interval is.
   if (rule.mode === 'interval') {
+    // `until` (a fixed date) caps the projection — used for annually re-anchored
+    // cadences (e.g. German auctions) so it stops at year-end instead of rolling.
+    if (rule.until) return { from, to: new Date(`${rule.until}T00:00:00`) }
     const ahead = Math.max(1, horizonMonths)
     return { from, to: addDays(anchor, ahead * rule.everyDays + 1) }
   }

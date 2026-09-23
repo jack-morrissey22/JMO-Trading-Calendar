@@ -22,6 +22,8 @@ function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
     manualShiftUnit: 'business' as 'business' | 'calendar',
     intervalWeeks: 6,
     intervalAnchor: [seed.getFullYear(), pad2(seed.getMonth() + 1), pad2(seed.getDate())].join('-'),
+    intervalUntilMode: 'occurrences' as 'occurrences' | 'date', // project N ahead, or until a date
+    intervalUntil: `${new Date().getFullYear()}-12-31`, // default target = end of this year
     monthsPreset: 'all' as 'all' | 'quarterly' | 'yearly' | 'custom',
     customMonths: [seed.getMonth() + 1],
     yearlyMonth: seed.getMonth() + 1,
@@ -60,6 +62,10 @@ function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
     base.intervalWeeks =
       rule.everyDays % 7 === 0 ? rule.everyDays / 7 : Math.max(1, Math.round(rule.everyDays / 7))
     base.intervalAnchor = rule.anchor
+    if (rule.until) {
+      base.intervalUntilMode = 'date'
+      base.intervalUntil = rule.until
+    }
     return base
   }
   base.mode = 'monthly'
@@ -186,6 +192,8 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
   const [manualShiftUnit, setManualShiftUnit] = useState<'business' | 'calendar'>(D.manualShiftUnit)
   const [intervalWeeks, setIntervalWeeks] = useState(D.intervalWeeks)
   const [intervalAnchor] = useState(D.intervalAnchor) // fixed: seed date (new) or preserved (edit)
+  const [intervalUntilMode, setIntervalUntilMode] = useState<'occurrences' | 'date'>(D.intervalUntilMode)
+  const [intervalUntil, setIntervalUntil] = useState(D.intervalUntil)
   const [monthsPreset, setMonthsPreset] = useState<'all' | 'quarterly' | 'yearly' | 'custom'>(
     D.monthsPreset,
   )
@@ -237,7 +245,12 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
     }
     if (mode === 'interval') {
       // anchor is overridden by App on create; preserved from `initial` on edit.
-      return { mode: 'interval', everyDays: Math.max(1, intervalWeeks) * 7, anchor: intervalAnchor }
+      return {
+        mode: 'interval',
+        everyDays: Math.max(1, intervalWeeks) * 7,
+        anchor: intervalAnchor,
+        ...(intervalUntilMode === 'date' ? { until: intervalUntil } : {}),
+      }
     }
     const months =
       monthsPreset === 'all'
@@ -262,7 +275,7 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
     repeats, mode, manualText, manualYear, manualShiftOn, manualShiftN, manualShiftUnit,
     monthsPreset, customMonths, yearlyMonth, dayType, nth,
     weekday, dayOfMonth, roll, nthBiz, nthLast, offsetDay, offsetDays, bizDom, bizDaysBefore, woaDay, woaRoll, weeklyDays,
-    intervalWeeks, intervalAnchor,
+    intervalWeeks, intervalAnchor, intervalUntilMode, intervalUntil,
   ])
 
   useEffect(() => {
@@ -577,33 +590,52 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
             </>
           )}
 
-          {mode !== 'manual' && (
-            <div className="recur-row">
+          {mode === 'interval' ? (
+            <div className="recur-row recur-params">
               <span className="recur-lab">Project</span>
               <select
-                value={horizonMonths}
-                onChange={(e) => setHorizonMonths(Number(e.target.value))}
+                value={intervalUntilMode}
+                onChange={(e) => setIntervalUntilMode(e.target.value as 'occurrences' | 'date')}
               >
-                {mode === 'interval'
-                  ? [1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                      <option key={n} value={n}>
-                        {n} occurrence{n > 1 ? 's' : ''} ahead
-                      </option>
-                    ))
-                  : HORIZONS.map((h) => (
-                      <option key={h} value={h}>
-                        {h} month{h > 1 ? 's' : ''} ahead
-                      </option>
-                    ))}
+                <option value="occurrences">a number ahead</option>
+                <option value="date">until a date</option>
+              </select>
+              {intervalUntilMode === 'occurrences' ? (
+                <select value={horizonMonths} onChange={(e) => setHorizonMonths(Number(e.target.value))}>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                    <option key={n} value={n}>
+                      {n} occurrence{n > 1 ? 's' : ''} ahead
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="date"
+                  value={intervalUntil}
+                  onChange={(e) => setIntervalUntil(e.target.value)}
+                />
+              )}
+            </div>
+          ) : mode !== 'manual' ? (
+            <div className="recur-row">
+              <span className="recur-lab">Project</span>
+              <select value={horizonMonths} onChange={(e) => setHorizonMonths(Number(e.target.value))}>
+                {HORIZONS.map((h) => (
+                  <option key={h} value={h}>
+                    {h} month{h > 1 ? 's' : ''} ahead
+                  </option>
+                ))}
               </select>
             </div>
-          )}
+          ) : null}
 
           {rule && (
             <p className="recur-summary">
               ↪ {describeRule(rule)}
               {mode === 'interval'
-                ? ` · projecting ${horizonMonths} ahead`
+                ? intervalUntilMode === 'date'
+                  ? ` · projecting until ${intervalUntil}`
+                  : ` · projecting ${horizonMonths} ahead`
                 : mode !== 'manual'
                   ? ` · projecting ${horizonMonths} month${horizonMonths > 1 ? 's' : ''}`
                   : ''}{' '}

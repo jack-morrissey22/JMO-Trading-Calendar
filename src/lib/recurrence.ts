@@ -16,7 +16,7 @@ export type RecurrenceRule =
   | { mode: 'weekly'; weekdays: number[] } // 0=Sun..6=Sat
   | { mode: 'monthly'; months: number[]; day: DayRule } // months: 1..12 (all 12 = monthly, [3,6,9,12] = quarterly, etc.)
   | { mode: 'manual'; dates: string[] } // explicit YYYY-MM-DD dates (no formula)
-  | { mode: 'interval'; everyDays: number; anchor: string } // every N days from an anchor date (e.g. central-bank ~6 weeks)
+  | { mode: 'interval'; everyDays: number; anchor: string; until?: string } // every N days from an anchor date (e.g. central-bank ~6 weeks); `until` (YYYY-MM-DD) caps projection at a fixed date instead of a rolling occurrence count
 
 const isWeekend = (d: Date) => d.getDay() === 0 || d.getDay() === 6
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
