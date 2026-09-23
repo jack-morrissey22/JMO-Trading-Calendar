@@ -1,6 +1,6 @@
 # JMO Calendar — recurrence pattern mapping guide
 
-**Reflects the app's pattern set as of 2026-09-22 (rev 4).**
+**Reflects the app's pattern set as of 2026-09-23 (rev 5).**
 If the app gains a new pattern type, this file is updated in the dev chat and re-stamped.
 
 ---
@@ -77,8 +77,8 @@ Pick one or more weekdays. Fires every week on those days. No monthly logic.
 - *Example:* jobless claims every Thursday → Weekly, Thu.
 
 ### Frequency: "Every N weeks"
-Every N weeks (N ∈ [1..104]) counting from **this event's date** (the anchor). Good for cadence events with no calendar-month logic (e.g. ~6-week central-bank cycles). Projects "N occurrences ahead" rather than months ahead.
-- *Example:* an ECB-style ~6-week cycle → Every 6 weeks.
+Every N weeks (N ∈ [1..104]) counting from **this event's date** (the anchor). Good for cadence events with no calendar-month logic (e.g. ~6-week central-bank cycles). Project either **"N occurrences ahead"** (a rolling window) or **"until a date"** (default: end of year) — the latter caps projection at a fixed date and doesn't roll, which suits **annually re-anchored** cadences (e.g. German auctions) whose rhythm breaks at year-end: project to Dec 31, then re-anchor in January.
+- *Examples:* an ECB-style ~6-week cycle → Every 6 weeks, N ahead. German Schatz → Every 3 weeks, **until year-end**, re-anchored each January.
 
 ### Frequency: "Manual dates"
 An explicit list of dates (no formula). Paste one per line. Options: a "year if not given" default, and an optional "resolve to N business/calendar days before each pasted date" shift.
