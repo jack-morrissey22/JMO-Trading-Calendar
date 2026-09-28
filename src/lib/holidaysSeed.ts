@@ -1790,5 +1790,231 @@ export const HOLIDAY_SEED: Record<string, SeedHoliday[]> = {
       "day": "2028-12-25",
       "name": "Christmas Day"
     }
+  ],
+  "China (SSE)": [
+    {
+      "day": "2026-01-01",
+      "name": "New Year's Day"
+    },
+    {
+      "day": "2026-02-16",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2026-02-17",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2026-02-18",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2026-02-19",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2026-02-20",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2026-02-21",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2026-02-22",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2026-04-05",
+      "name": "Qingming Festival"
+    },
+    {
+      "day": "2026-05-01",
+      "name": "Labour Day"
+    },
+    {
+      "day": "2026-06-19",
+      "name": "Dragon Boat Festival"
+    },
+    {
+      "day": "2026-09-25",
+      "name": "Mid-Autumn Festival"
+    },
+    {
+      "day": "2026-10-01",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2026-10-02",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2026-10-03",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2026-10-04",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2026-10-05",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2026-10-06",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2026-10-07",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2027-01-01",
+      "name": "New Year's Day"
+    },
+    {
+      "day": "2027-02-05",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2027-02-06",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2027-02-07",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2027-02-08",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2027-02-09",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2027-02-10",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2027-02-11",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2027-04-05",
+      "name": "Qingming Festival"
+    },
+    {
+      "day": "2027-05-01",
+      "name": "Labour Day"
+    },
+    {
+      "day": "2027-06-09",
+      "name": "Dragon Boat Festival"
+    },
+    {
+      "day": "2027-09-15",
+      "name": "Mid-Autumn Festival"
+    },
+    {
+      "day": "2027-10-01",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2027-10-02",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2027-10-03",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2027-10-04",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2027-10-05",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2027-10-06",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2027-10-07",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2028-01-01",
+      "name": "New Year's Day"
+    },
+    {
+      "day": "2028-01-25",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2028-01-26",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2028-01-27",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2028-01-28",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2028-01-29",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2028-01-30",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2028-01-31",
+      "name": "Spring Festival"
+    },
+    {
+      "day": "2028-04-04",
+      "name": "Qingming Festival"
+    },
+    {
+      "day": "2028-05-01",
+      "name": "Labour Day"
+    },
+    {
+      "day": "2028-05-28",
+      "name": "Dragon Boat Festival"
+    },
+    {
+      "day": "2028-10-01",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2028-10-02",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2028-10-03",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2028-10-04",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2028-10-05",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2028-10-06",
+      "name": "National Day (Golden Week)"
+    },
+    {
+      "day": "2028-10-07",
+      "name": "National Day (Golden Week)"
+    }
   ]
 }

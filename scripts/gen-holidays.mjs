@@ -124,6 +124,52 @@ for (const [label, code] of Object.entries(MARKETS)) {
     .map(([day, name]) => ({ day, name }))
 }
 
+// Best-effort "China (SSE)" market calendar. date-holidays 'CN' only has the
+// STATUTORY skeleton (3-day National Day, 3-day Spring Festival) plus some
+// commemorative NON-closures. This approximates the exchange's actual closures:
+// drop the commemoratives, force National Day to the full Golden Week (Oct 1–7),
+// and extend Spring Festival to 7 days from its first statutory day.
+// ⚠️ APPROXIMATE: China's holidays are announced yearly by the State Council with
+// make-up working weekends, and exact spans vary. Golden Week (Oct 1–7) is
+// reliable; the Spring Festival span (and any Labour Day extension / make-up days)
+// should be verified against SSE's published schedule each year.
+{
+  const cn = new Holidays('CN')
+  cn.setLanguages('en')
+  const DROP = /women|youth|children|army/i
+  const byDay = new Map()
+  const addRange = (y0, m1, d0, days, name) => {
+    for (let i = 0; i < days; i++) {
+      const d = new Date(y0, m1 - 1, d0 + i)
+      byDay.set(
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+        name,
+      )
+    }
+  }
+  for (const year of YEARS) {
+    const springDays = []
+    for (const h of cn.getHolidays(year)) {
+      if (h.type !== 'public' || DROP.test(h.name)) continue
+      const day = h.date.slice(0, 10)
+      if (/spring festival/i.test(h.name)) {
+        springDays.push(day)
+        continue
+      }
+      if (/national day/i.test(h.name)) continue // replaced by the full Golden Week below
+      if (!byDay.has(day)) byDay.set(day, h.name)
+    }
+    addRange(year, 10, 1, 7, 'National Day (Golden Week)') // Oct 1–7, reliable
+    if (springDays.length) {
+      const [y, mo, da] = springDays.sort()[0].split('-').map(Number)
+      addRange(y, mo, da, 7, 'Spring Festival') // ⚠️ approximate 7-day span
+    }
+  }
+  seed['China (SSE)'] = [...byDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, name]) => ({ day, name }))
+}
+
 const header = `// Auto-generated starter holiday data (public holidays ${YEARS[0]}-${YEARS[YEARS.length - 1]}) from the
 // date-holidays library, for one-click import in the Holidays manager. Edit there
 // afterwards to match your exact exchange calendars. Regenerate with
