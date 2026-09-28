@@ -445,9 +445,13 @@ export async function importHolidays(
   const { data: userRes } = await supabase.auth.getUser()
   const user_id = userRes.user?.id
   const payload = rows.map((r) => ({ calendar_id: calendarId, day: r.day, name: r.name, user_id }))
+  // Update the name on conflict (not ignore) so re-importing a market REFRESHES an
+  // existing same-named calendar in place — e.g. switching Germany/France/etc. to
+  // English names — without a new calendar or re-attaching events. New days (e.g.
+  // Japan's year-end closures) are added; days no longer in the seed are left as-is.
   const { error } = await supabase
     .from('holidays')
-    .upsert(payload, { onConflict: 'calendar_id,day', ignoreDuplicates: true })
+    .upsert(payload, { onConflict: 'calendar_id,day' })
   if (error) throw error
 }
 
