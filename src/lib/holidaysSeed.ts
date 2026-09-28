@@ -508,207 +508,243 @@ export const HOLIDAY_SEED: Record<string, SeedHoliday[]> = {
   "Japan": [
     {
       "day": "2026-01-01",
-      "name": "元日"
+      "name": "New Year's Day"
+    },
+    {
+      "day": "2026-01-02",
+      "name": "January 2nd"
+    },
+    {
+      "day": "2026-01-03",
+      "name": "January 3rd"
     },
     {
       "day": "2026-01-12",
-      "name": "成人の日"
+      "name": "Coming of Age Day"
     },
     {
       "day": "2026-02-11",
-      "name": "建国記念の日"
+      "name": "Foundation Day"
     },
     {
       "day": "2026-02-23",
-      "name": "天皇誕生日"
+      "name": "Emperor's Birthday"
     },
     {
       "day": "2026-03-20",
-      "name": "春分の日"
+      "name": "Spring Equinox Day"
     },
     {
       "day": "2026-04-29",
-      "name": "昭和の日"
+      "name": "Showa Day"
     },
     {
       "day": "2026-05-03",
-      "name": "憲法記念日"
+      "name": "Constitution Day"
     },
     {
       "day": "2026-05-04",
-      "name": "みどりの日"
+      "name": "Greenery Day"
     },
     {
       "day": "2026-05-05",
-      "name": "こどもの日"
+      "name": "Children's Day"
     },
     {
       "day": "2026-05-06",
-      "name": "憲法記念日 (振替休日)"
+      "name": "Constitution Day (substitute day)"
     },
     {
       "day": "2026-07-20",
-      "name": "海の日"
+      "name": "Marine Day"
     },
     {
       "day": "2026-08-11",
-      "name": "山の日"
+      "name": "Mountain Day"
     },
     {
       "day": "2026-09-21",
-      "name": "敬老の日"
+      "name": "Respect-for-the-Aged Day"
     },
     {
       "day": "2026-09-22",
-      "name": "国民の休日"
+      "name": "Citizens' Holiday"
     },
     {
       "day": "2026-09-23",
-      "name": "秋分の日"
+      "name": "Autumnal Equinox Day"
     },
     {
       "day": "2026-10-12",
-      "name": "スポーツの日"
+      "name": "Sports Day"
     },
     {
       "day": "2026-11-03",
-      "name": "文化の日"
+      "name": "Culture Day"
     },
     {
       "day": "2026-11-23",
-      "name": "勤労感謝の日"
+      "name": "Labor Thanksgiving Day"
+    },
+    {
+      "day": "2026-12-31",
+      "name": "New Year's Eve"
     },
     {
       "day": "2027-01-01",
-      "name": "元日"
+      "name": "New Year's Day"
+    },
+    {
+      "day": "2027-01-02",
+      "name": "January 2nd"
+    },
+    {
+      "day": "2027-01-03",
+      "name": "January 3rd"
     },
     {
       "day": "2027-01-11",
-      "name": "成人の日"
+      "name": "Coming of Age Day"
     },
     {
       "day": "2027-02-11",
-      "name": "建国記念の日"
+      "name": "Foundation Day"
     },
     {
       "day": "2027-02-23",
-      "name": "天皇誕生日"
+      "name": "Emperor's Birthday"
     },
     {
       "day": "2027-03-21",
-      "name": "春分の日"
+      "name": "Spring Equinox Day"
     },
     {
       "day": "2027-03-22",
-      "name": "春分の日 (振替休日)"
+      "name": "Spring Equinox Day (substitute day)"
     },
     {
       "day": "2027-04-29",
-      "name": "昭和の日"
+      "name": "Showa Day"
     },
     {
       "day": "2027-05-03",
-      "name": "憲法記念日"
+      "name": "Constitution Day"
     },
     {
       "day": "2027-05-04",
-      "name": "みどりの日"
+      "name": "Greenery Day"
     },
     {
       "day": "2027-05-05",
-      "name": "こどもの日"
+      "name": "Children's Day"
     },
     {
       "day": "2027-07-19",
-      "name": "海の日"
+      "name": "Marine Day"
     },
     {
       "day": "2027-08-11",
-      "name": "山の日"
+      "name": "Mountain Day"
     },
     {
       "day": "2027-09-20",
-      "name": "敬老の日"
+      "name": "Respect-for-the-Aged Day"
     },
     {
       "day": "2027-09-23",
-      "name": "秋分の日"
+      "name": "Autumnal Equinox Day"
     },
     {
       "day": "2027-10-11",
-      "name": "スポーツの日"
+      "name": "Sports Day"
     },
     {
       "day": "2027-11-03",
-      "name": "文化の日"
+      "name": "Culture Day"
     },
     {
       "day": "2027-11-23",
-      "name": "勤労感謝の日"
+      "name": "Labor Thanksgiving Day"
+    },
+    {
+      "day": "2027-12-31",
+      "name": "New Year's Eve"
     },
     {
       "day": "2028-01-01",
-      "name": "元日"
+      "name": "New Year's Day"
+    },
+    {
+      "day": "2028-01-02",
+      "name": "January 2nd"
+    },
+    {
+      "day": "2028-01-03",
+      "name": "January 3rd"
     },
     {
       "day": "2028-01-10",
-      "name": "成人の日"
+      "name": "Coming of Age Day"
     },
     {
       "day": "2028-02-11",
-      "name": "建国記念の日"
+      "name": "Foundation Day"
     },
     {
       "day": "2028-02-23",
-      "name": "天皇誕生日"
+      "name": "Emperor's Birthday"
     },
     {
       "day": "2028-03-20",
-      "name": "春分の日"
+      "name": "Spring Equinox Day"
     },
     {
       "day": "2028-04-29",
-      "name": "昭和の日"
+      "name": "Showa Day"
     },
     {
       "day": "2028-05-03",
-      "name": "憲法記念日"
+      "name": "Constitution Day"
     },
     {
       "day": "2028-05-04",
-      "name": "みどりの日"
+      "name": "Greenery Day"
     },
     {
       "day": "2028-05-05",
-      "name": "こどもの日"
+      "name": "Children's Day"
     },
     {
       "day": "2028-07-17",
-      "name": "海の日"
+      "name": "Marine Day"
     },
     {
       "day": "2028-08-11",
-      "name": "山の日"
+      "name": "Mountain Day"
     },
     {
       "day": "2028-09-18",
-      "name": "敬老の日"
+      "name": "Respect-for-the-Aged Day"
     },
     {
       "day": "2028-09-22",
-      "name": "秋分の日"
+      "name": "Autumnal Equinox Day"
     },
     {
       "day": "2028-10-09",
-      "name": "スポーツの日"
+      "name": "Sports Day"
     },
     {
       "day": "2028-11-03",
-      "name": "文化の日"
+      "name": "Culture Day"
     },
     {
       "day": "2028-11-23",
-      "name": "勤労感謝の日"
+      "name": "Labor Thanksgiving Day"
+    },
+    {
+      "day": "2028-12-31",
+      "name": "New Year's Eve"
     }
   ],
   "Singapore": [

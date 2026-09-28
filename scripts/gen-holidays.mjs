@@ -27,17 +27,24 @@ const MARKETS = {
 }
 
 // Force English names for a market instead of its own language (which is the
-// default). China's holidays would otherwise be in Chinese.
-const ENGLISH = new Set(['China'])
+// default). China's and Japan's holidays would otherwise be in Chinese/Japanese.
+const ENGLISH = new Set(['China', 'Japan'])
+
+// Which holiday types each market closes for. Default is 'public' only. Japan's
+// exchange (TSE) also closes for the year-end/New-Year 'bank' days (Dec 31, Jan 2,
+// Jan 3), which aren't statutory public holidays.
+const PUBLIC_ONLY = new Set(['public'])
+const TYPES = { Japan: new Set(['public', 'bank']) }
 
 const seed = {}
 for (const [label, code] of Object.entries(MARKETS)) {
   const hd = new Holidays(code)
   if (ENGLISH.has(label)) hd.setLanguages('en')
+  const allow = TYPES[label] ?? PUBLIC_ONLY
   const byDay = new Map() // de-dupe if two years or rule variants collide on a day
   for (const year of YEARS) {
     for (const h of hd.getHolidays(year)) {
-      if (h.type !== 'public') continue // exchanges close for public holidays
+      if (!allow.has(h.type)) continue // exchanges close for public (+ some bank) holidays
       const day = h.date.slice(0, 10) // "YYYY-MM-DD HH:mm:ss" → "YYYY-MM-DD"
       if (!byDay.has(day)) byDay.set(day, h.name)
     }
