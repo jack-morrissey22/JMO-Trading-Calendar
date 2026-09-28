@@ -482,7 +482,7 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
                   <option value="nth_last_bizday">Nth-last business day</option>
                   <option value="bizdays_before_dom">Business days before a date</option>
                   <option value="weekday_on_or_after">First weekday on/after a date</option>
-                  <option value="reference_week">Reference week (US employment)</option>
+                  <option value="reference_week">Reference week</option>
                   <option value="offset_snap">Offset from a date</option>
                 </select>
               </div>
