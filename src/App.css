@@ -965,6 +965,33 @@
 .recur-params input {
   width: 60px;
 }
+/* Reference-week rule: two wrapped lines of small controls. */
+.recur-refweek {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+.recur-refweek > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.recur-refweek input {
+  width: 56px;
+}
+.recur-refweek input,
+.recur-refweek select {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 7px;
+  font-size: 12.5px;
+  color: var(--text);
+  font-family: inherit;
+}
 .recur-chips {
   display: flex;
   flex-wrap: wrap;

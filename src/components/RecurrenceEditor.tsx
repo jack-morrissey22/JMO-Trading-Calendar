@@ -40,6 +40,10 @@ function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
     bizDaysBefore: 2,
     woaDay: 14, // "first weekday on or after the Dth" anchor day-of-month
     woaRoll: 'forward' as 'forward' | 'backward', // holiday roll direction for that rule
+    refDom: 12, // reference_week: day whose Sun–Sat week is the reference week
+    refMonthOffset: -1, // reference month relative to release month
+    refOffsetDays: 0, // result offset (ADP −2, JOLTS −3)
+    refRoll: 'backward' as 'forward' | 'backward',
     weeklyDays: [seed.getDay()],
     horizonMonths: 3,
   }
@@ -102,6 +106,13 @@ function deriveInit(initial: RecurrenceValue | undefined, seed: Date) {
     base.weekday = d.weekday
     base.woaDay = d.day
     base.woaRoll = d.roll ?? 'forward'
+  } else if (d.type === 'reference_week') {
+    base.nth = d.nth
+    base.weekday = d.weekday
+    base.refDom = d.refDom
+    base.refMonthOffset = d.monthOffset
+    base.refOffsetDays = d.offsetDays
+    base.refRoll = d.roll
   }
   return base
 }
@@ -212,6 +223,10 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
   const [bizDaysBefore, setBizDaysBefore] = useState(D.bizDaysBefore)
   const [woaDay, setWoaDay] = useState(D.woaDay)
   const [woaRoll, setWoaRoll] = useState<'forward' | 'backward'>(D.woaRoll)
+  const [refDom, setRefDom] = useState(D.refDom)
+  const [refMonthOffset, setRefMonthOffset] = useState(D.refMonthOffset)
+  const [refOffsetDays, setRefOffsetDays] = useState(D.refOffsetDays)
+  const [refRoll, setRefRoll] = useState<'forward' | 'backward'>(D.refRoll)
   const [weeklyDays, setWeeklyDays] = useState<number[]>(D.weeklyDays)
   const [horizonMonths, setHorizonMonths] = useState(D.horizonMonths)
 
@@ -269,12 +284,23 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
       day = { type: 'bizdays_before_dom', day: bizDom, bizdays: bizDaysBefore }
     else if (dayType === 'weekday_on_or_after')
       day = { type: 'weekday_on_or_after', weekday, day: woaDay, roll: woaRoll }
+    else if (dayType === 'reference_week')
+      day = {
+        type: 'reference_week',
+        refDom,
+        monthOffset: refMonthOffset,
+        weekday,
+        nth,
+        offsetDays: refOffsetDays,
+        roll: refRoll,
+      }
     else day = { type: 'offset_snap', day: offsetDay, offsetDays }
     return { mode: 'monthly', months, day }
   }, [
     repeats, mode, manualText, manualYear, manualShiftOn, manualShiftN, manualShiftUnit,
     monthsPreset, customMonths, yearlyMonth, dayType, nth,
-    weekday, dayOfMonth, roll, nthBiz, nthLast, offsetDay, offsetDays, bizDom, bizDaysBefore, woaDay, woaRoll, weeklyDays,
+    weekday, dayOfMonth, roll, nthBiz, nthLast, offsetDay, offsetDays, bizDom, bizDaysBefore, woaDay, woaRoll,
+    refDom, refMonthOffset, refOffsetDays, refRoll, weeklyDays,
     intervalWeeks, intervalAnchor, intervalUntilMode, intervalUntil,
   ])
 
@@ -456,6 +482,7 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
                   <option value="nth_last_bizday">Nth-last business day</option>
                   <option value="bizdays_before_dom">Business days before a date</option>
                   <option value="weekday_on_or_after">First weekday on/after a date</option>
+                  <option value="reference_week">Reference week (US employment)</option>
                   <option value="offset_snap">Offset from a date</option>
                 </select>
               </div>
@@ -567,6 +594,54 @@ export function RecurrenceEditor({ seedDate, initial, onChange }: Props) {
                       <option value="backward">holiday → previous business day</option>
                     </select>
                   </>
+                )}
+                {dayType === 'reference_week' && (
+                  <div className="recur-refweek">
+                    <div>
+                      the
+                      <select value={nth} onChange={(e) => setNth(Number(e.target.value))}>
+                        {[1, 2, 3, 4].map((n) => (
+                          <option key={n} value={n}>
+                            {['', '1st', '2nd', '3rd', '4th'][n]}
+                          </option>
+                        ))}
+                      </select>
+                      <select value={weekday} onChange={(e) => setWeekday(Number(e.target.value))}>
+                        {WEEKDAYS.map((w) => (
+                          <option key={w.v} value={w.v}>
+                            {w.l}
+                          </option>
+                        ))}
+                      </select>
+                      after the week of the
+                      <input
+                        type="number"
+                        min={1}
+                        max={31}
+                        value={refDom}
+                        onChange={(e) => setRefDom(Number(e.target.value))}
+                      />
+                      <select value={refMonthOffset} onChange={(e) => setRefMonthOffset(Number(e.target.value))}>
+                        <option value={-1}>of the previous month</option>
+                        <option value={0}>of the same month</option>
+                      </select>
+                    </div>
+                    <div>
+                      then offset by
+                      <input
+                        type="number"
+                        min={-6}
+                        max={6}
+                        value={refOffsetDays}
+                        onChange={(e) => setRefOffsetDays(Number(e.target.value))}
+                      />
+                      days (NFP 0, ADP −2, JOLTS −3);
+                      <select value={refRoll} onChange={(e) => setRefRoll(e.target.value as 'forward' | 'backward')}>
+                        <option value="backward">holiday → previous business day</option>
+                        <option value="forward">holiday → next business day</option>
+                      </select>
+                    </div>
+                  </div>
                 )}
                 {dayType === 'offset_snap' && (
                   <>

@@ -11,6 +11,7 @@ export type DayRule =
   | { type: 'offset_snap'; day: number; offsetDays: number } // anchor day-of-month ± offset, snap to nearest weekday
   | { type: 'bizdays_before_dom'; day: number; bizdays: number } // N business days BEFORE the Dth calendar day (e.g. expiries)
   | { type: 'weekday_on_or_after'; weekday: number; day: number; roll?: 'forward' | 'backward' } // first `weekday` on/after the Dth, then off weekends & holidays to the next ('forward', default — stat releases) or previous ('backward' — Treasury auctions) business day
+  | { type: 'reference_week'; refDom: number; monthOffset: number; weekday: number; nth: number; offsetDays: number; roll: 'forward' | 'backward' } // US employment family: the nth `weekday` after the Sun–Sat week containing the refDom-th of the reference month (monthOffset from the release month), plus offsetDays, holiday-rolled. NFP=(12,-1,Fri,3,0); ADP=offset −2; JOLTS=offset −3
 
 export type RecurrenceRule =
   | { mode: 'weekly'; weekdays: number[] } // 0=Sun..6=Sat
@@ -64,6 +65,30 @@ function nthLastBizday(y: number, m: number, nth: number, isHol: IsHol = noHol):
     }
     d = new Date(y, m, d.getDate() - 1)
   }
+}
+
+// One release per REFERENCE cycle (US employment family). The reference month is
+// `monthOffset` months from the release-month index m; take the Sun–Sat week
+// containing its `refDom`-th, step to the `nth` `weekday` strictly after that week
+// ends (its Saturday), apply `offsetDays`, then roll off weekends/holidays to a
+// business day. NFP=(refDom 12, monthOffset −1, Fri, nth 3, offset 0, backward);
+// ADP = offset −2 (the Wednesday); JOLTS = offset −3 (the Tuesday). The result can
+// land in the release month OR (for negative offsets) late in the previous one.
+function referenceWeekDate(
+  y: number,
+  m: number,
+  r: { refDom: number; monthOffset: number; weekday: number; nth: number; offsetDays: number; roll: 'forward' | 'backward' },
+  isHol: IsHol,
+): Date {
+  const ref = new Date(y, m + r.monthOffset, r.refDom) // reference-month anchor (Date normalises year wrap)
+  const sat = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() + (6 - ref.getDay())) // Saturday ending its Sun–Sat week
+  let du = (r.weekday - sat.getDay() + 7) % 7 // days to the next `weekday` strictly after the Saturday
+  if (du === 0) du = 7
+  let d = new Date(sat.getFullYear(), sat.getMonth(), sat.getDate() + du + (r.nth - 1) * 7)
+  if (r.offsetDays) d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + r.offsetDays)
+  const step = r.roll === 'backward' ? -1 : 1
+  while (isWeekend(d) || isHol(d)) d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + step)
+  return d
 }
 
 function rollWeekend(d: Date, roll: 'next' | 'prev' | 'none'): Date {
@@ -143,6 +168,8 @@ function dayInMonth(y: number, m: number, rule: DayRule, isHol: IsHol = noHol): 
       while (isWeekend(d) || isHol(d)) d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + step)
       return d
     }
+    case 'reference_week':
+      return referenceWeekDate(y, m, rule, isHol)
   }
 }
 
@@ -185,7 +212,13 @@ export function computeOccurrences(
   }
   let y = from.getFullYear()
   let m = from.getMonth()
-  const endMonth = new Date(to.getFullYear(), to.getMonth(), 1)
+  // reference_week releases can land in the calendar month BEFORE their release-
+  // month index (negative offsets), so iterate two extra months past `to` to catch
+  // ones landing inside the window. Harmless for every other rule (their extra
+  // months produce dates > to, filtered out below), but kept conditional so their
+  // behaviour is provably identical.
+  const tail = rule.day.type === 'reference_week' ? 2 : 0
+  const endMonth = new Date(to.getFullYear(), to.getMonth() + tail, 1)
   const f = startOfDay(from)
   while (new Date(y, m, 1) <= endMonth) {
     if (rule.months.includes(m + 1)) {
@@ -198,6 +231,7 @@ export function computeOccurrences(
       y++
     }
   }
+  out.sort((a, b) => a.getTime() - b.getTime())
   return out
 }
 
@@ -268,6 +302,14 @@ export function describeRule(rule: RecurrenceRule): string {
     case 'weekday_on_or_after':
       day = `the first ${WEEKDAY_NAMES[d.weekday]} on or after the ${ordinalDay(d.day)}${d.roll === 'backward' ? ' (earlier if a holiday)' : ''}`
       break
+    case 'reference_week': {
+      const off =
+        d.offsetDays === 0
+          ? ''
+          : ` ${d.offsetDays < 0 ? '−' : '+'} ${Math.abs(d.offsetDays)} day${Math.abs(d.offsetDays) === 1 ? '' : 's'}`
+      const refMonth = d.monthOffset === -1 ? ' of the previous month' : d.monthOffset === 0 ? '' : ` (${d.monthOffset > 0 ? '+' : ''}${d.monthOffset} months)`
+      return `the ${ord(d.nth)} ${WEEKDAY_NAMES[d.weekday]} after the week of the ${ordinalDay(d.refDom)}${refMonth}${off}`
+    }
   }
   return `${day} of ${monthsLabel(rule.months)}`
 }
