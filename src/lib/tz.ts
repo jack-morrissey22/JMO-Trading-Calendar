@@ -15,6 +15,8 @@ export const MARKET_TZS: { value: string; label: string }[] = [
   { value: 'Europe/Berlin', label: 'Central Europe' },
   { value: 'Asia/Tokyo', label: 'Japan' },
   { value: 'Asia/Singapore', label: 'Singapore' },
+  { value: 'Australia/Sydney', label: 'Sydney' },
+  { value: 'Pacific/Auckland', label: 'New Zealand' },
 ]
 export const tzLabel = (tz: string | null | undefined): string =>
   MARKET_TZS.find((t) => t.value === (tz || HOME_TZ))?.label ?? (tz || HOME_TZ)
