@@ -27,8 +27,9 @@ const MARKETS = {
 }
 
 // Force English names for a market instead of its own language (which is the
-// default). China's and Japan's holidays would otherwise be in Chinese/Japanese.
-const ENGLISH = new Set(['China', 'Japan'])
+// default) — otherwise China/Japan/Germany/France/Switzerland come back in their
+// own languages. (Spain is intentionally left in Spanish.)
+const ENGLISH = new Set(['China', 'Japan', 'Germany', 'France', 'Switzerland'])
 
 // Which holiday types each market closes for. Default is 'public' only. Japan's
 // exchange (TSE) also closes for the year-end/New-Year 'bank' days (Dec 31, Jan 2,

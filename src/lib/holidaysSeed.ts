@@ -264,245 +264,245 @@ export const HOLIDAY_SEED: Record<string, SeedHoliday[]> = {
   "Germany": [
     {
       "day": "2026-01-01",
-      "name": "Neujahr"
+      "name": "New Year's Day"
     },
     {
       "day": "2026-04-03",
-      "name": "Karfreitag"
+      "name": "Good Friday"
     },
     {
       "day": "2026-04-06",
-      "name": "Ostermontag"
+      "name": "Easter Monday"
     },
     {
       "day": "2026-05-01",
-      "name": "Maifeiertag"
+      "name": "Labour Day"
     },
     {
       "day": "2026-05-14",
-      "name": "Christi Himmelfahrt"
+      "name": "Ascension Day"
     },
     {
       "day": "2026-05-25",
-      "name": "Pfingstmontag"
+      "name": "Whit Monday"
     },
     {
       "day": "2026-10-03",
-      "name": "Tag der Deutschen Einheit"
+      "name": "National Holiday"
     },
     {
       "day": "2026-12-25",
-      "name": "1. Weihnachtstag"
+      "name": "Christmas Day"
     },
     {
       "day": "2026-12-26",
-      "name": "2. Weihnachtstag"
+      "name": "Boxing Day"
     },
     {
       "day": "2027-01-01",
-      "name": "Neujahr"
+      "name": "New Year's Day"
     },
     {
       "day": "2027-03-26",
-      "name": "Karfreitag"
+      "name": "Good Friday"
     },
     {
       "day": "2027-03-29",
-      "name": "Ostermontag"
+      "name": "Easter Monday"
     },
     {
       "day": "2027-05-01",
-      "name": "Maifeiertag"
+      "name": "Labour Day"
     },
     {
       "day": "2027-05-06",
-      "name": "Christi Himmelfahrt"
+      "name": "Ascension Day"
     },
     {
       "day": "2027-05-17",
-      "name": "Pfingstmontag"
+      "name": "Whit Monday"
     },
     {
       "day": "2027-10-03",
-      "name": "Tag der Deutschen Einheit"
+      "name": "National Holiday"
     },
     {
       "day": "2027-12-25",
-      "name": "1. Weihnachtstag"
+      "name": "Christmas Day"
     },
     {
       "day": "2027-12-26",
-      "name": "2. Weihnachtstag"
+      "name": "Boxing Day"
     },
     {
       "day": "2028-01-01",
-      "name": "Neujahr"
+      "name": "New Year's Day"
     },
     {
       "day": "2028-04-14",
-      "name": "Karfreitag"
+      "name": "Good Friday"
     },
     {
       "day": "2028-04-17",
-      "name": "Ostermontag"
+      "name": "Easter Monday"
     },
     {
       "day": "2028-05-01",
-      "name": "Maifeiertag"
+      "name": "Labour Day"
     },
     {
       "day": "2028-05-25",
-      "name": "Christi Himmelfahrt"
+      "name": "Ascension Day"
     },
     {
       "day": "2028-06-05",
-      "name": "Pfingstmontag"
+      "name": "Whit Monday"
     },
     {
       "day": "2028-10-03",
-      "name": "Tag der Deutschen Einheit"
+      "name": "National Holiday"
     },
     {
       "day": "2028-12-25",
-      "name": "1. Weihnachtstag"
+      "name": "Christmas Day"
     },
     {
       "day": "2028-12-26",
-      "name": "2. Weihnachtstag"
+      "name": "Boxing Day"
     }
   ],
   "France": [
     {
       "day": "2026-01-01",
-      "name": "Nouvel An"
+      "name": "New Year's Day"
     },
     {
       "day": "2026-04-06",
-      "name": "Lundi de Pâques"
+      "name": "Easter Monday"
     },
     {
       "day": "2026-05-01",
-      "name": "Fête du travail"
+      "name": "Labour Day"
     },
     {
       "day": "2026-05-08",
-      "name": "Fête de la Victoire 1945"
+      "name": "Victory Day"
     },
     {
       "day": "2026-05-14",
-      "name": "Ascension"
+      "name": "Ascension Day"
     },
     {
       "day": "2026-05-25",
-      "name": "Lundi de Pentecôte"
+      "name": "Whit Monday"
     },
     {
       "day": "2026-07-14",
-      "name": "Fête Nationale de la France"
+      "name": "Bastille Day"
     },
     {
       "day": "2026-08-15",
-      "name": "Assomption"
+      "name": "Assumption"
     },
     {
       "day": "2026-11-01",
-      "name": "Toussaint"
+      "name": "All Saints' Day"
     },
     {
       "day": "2026-11-11",
-      "name": "Armistice 1918"
+      "name": "Armistice Day"
     },
     {
       "day": "2026-12-25",
-      "name": "Noël"
+      "name": "Christmas Day"
     },
     {
       "day": "2027-01-01",
-      "name": "Nouvel An"
+      "name": "New Year's Day"
     },
     {
       "day": "2027-03-29",
-      "name": "Lundi de Pâques"
+      "name": "Easter Monday"
     },
     {
       "day": "2027-05-01",
-      "name": "Fête du travail"
+      "name": "Labour Day"
     },
     {
       "day": "2027-05-06",
-      "name": "Ascension"
+      "name": "Ascension Day"
     },
     {
       "day": "2027-05-08",
-      "name": "Fête de la Victoire 1945"
+      "name": "Victory Day"
     },
     {
       "day": "2027-05-17",
-      "name": "Lundi de Pentecôte"
+      "name": "Whit Monday"
     },
     {
       "day": "2027-07-14",
-      "name": "Fête Nationale de la France"
+      "name": "Bastille Day"
     },
     {
       "day": "2027-08-15",
-      "name": "Assomption"
+      "name": "Assumption"
     },
     {
       "day": "2027-11-01",
-      "name": "Toussaint"
+      "name": "All Saints' Day"
     },
     {
       "day": "2027-11-11",
-      "name": "Armistice 1918"
+      "name": "Armistice Day"
     },
     {
       "day": "2027-12-25",
-      "name": "Noël"
+      "name": "Christmas Day"
     },
     {
       "day": "2028-01-01",
-      "name": "Nouvel An"
+      "name": "New Year's Day"
     },
     {
       "day": "2028-04-17",
-      "name": "Lundi de Pâques"
+      "name": "Easter Monday"
     },
     {
       "day": "2028-05-01",
-      "name": "Fête du travail"
+      "name": "Labour Day"
     },
     {
       "day": "2028-05-08",
-      "name": "Fête de la Victoire 1945"
+      "name": "Victory Day"
     },
     {
       "day": "2028-05-25",
-      "name": "Ascension"
+      "name": "Ascension Day"
     },
     {
       "day": "2028-06-05",
-      "name": "Lundi de Pentecôte"
+      "name": "Whit Monday"
     },
     {
       "day": "2028-07-14",
-      "name": "Fête Nationale de la France"
+      "name": "Bastille Day"
     },
     {
       "day": "2028-08-15",
-      "name": "Assomption"
+      "name": "Assumption"
     },
     {
       "day": "2028-11-01",
-      "name": "Toussaint"
+      "name": "All Saints' Day"
     },
     {
       "day": "2028-11-11",
-      "name": "Armistice 1918"
+      "name": "Armistice Day"
     },
     {
       "day": "2028-12-25",
-      "name": "Noël"
+      "name": "Christmas Day"
     }
   ],
   "Japan": [
@@ -954,31 +954,31 @@ export const HOLIDAY_SEED: Record<string, SeedHoliday[]> = {
   "Switzerland": [
     {
       "day": "2026-01-01",
-      "name": "Neujahr"
+      "name": "New Year's Day"
     },
     {
       "day": "2026-04-03",
-      "name": "Karfreitag"
+      "name": "Good Friday"
     },
     {
       "day": "2026-04-05",
-      "name": "Ostersonntag"
+      "name": "Easter Sunday"
     },
     {
       "day": "2026-04-06",
-      "name": "Ostermontag"
+      "name": "Easter Monday"
     },
     {
       "day": "2026-05-14",
-      "name": "Auffahrt"
+      "name": "Ascension Day"
     },
     {
       "day": "2026-05-24",
-      "name": "Pfingstsonntag"
+      "name": "Pentecost"
     },
     {
       "day": "2026-05-25",
-      "name": "Pfingstmontag"
+      "name": "Whit Monday"
     },
     {
       "day": "2026-08-01",
@@ -986,43 +986,43 @@ export const HOLIDAY_SEED: Record<string, SeedHoliday[]> = {
     },
     {
       "day": "2026-09-20",
-      "name": "Eidg. Dank-, Buss- und Bettag"
+      "name": "Federal Day of Thanksgiving, Repentance and Prayer"
     },
     {
       "day": "2026-12-25",
-      "name": "Weihnachtstag"
+      "name": "Christmas Day"
     },
     {
       "day": "2026-12-26",
-      "name": "Stephanstag"
+      "name": "Boxing Day"
     },
     {
       "day": "2027-01-01",
-      "name": "Neujahr"
+      "name": "New Year's Day"
     },
     {
       "day": "2027-03-26",
-      "name": "Karfreitag"
+      "name": "Good Friday"
     },
     {
       "day": "2027-03-28",
-      "name": "Ostersonntag"
+      "name": "Easter Sunday"
     },
     {
       "day": "2027-03-29",
-      "name": "Ostermontag"
+      "name": "Easter Monday"
     },
     {
       "day": "2027-05-06",
-      "name": "Auffahrt"
+      "name": "Ascension Day"
     },
     {
       "day": "2027-05-16",
-      "name": "Pfingstsonntag"
+      "name": "Pentecost"
     },
     {
       "day": "2027-05-17",
-      "name": "Pfingstmontag"
+      "name": "Whit Monday"
     },
     {
       "day": "2027-08-01",
@@ -1030,43 +1030,43 @@ export const HOLIDAY_SEED: Record<string, SeedHoliday[]> = {
     },
     {
       "day": "2027-09-19",
-      "name": "Eidg. Dank-, Buss- und Bettag"
+      "name": "Federal Day of Thanksgiving, Repentance and Prayer"
     },
     {
       "day": "2027-12-25",
-      "name": "Weihnachtstag"
+      "name": "Christmas Day"
     },
     {
       "day": "2027-12-26",
-      "name": "Stephanstag"
+      "name": "Boxing Day"
     },
     {
       "day": "2028-01-01",
-      "name": "Neujahr"
+      "name": "New Year's Day"
     },
     {
       "day": "2028-04-14",
-      "name": "Karfreitag"
+      "name": "Good Friday"
     },
     {
       "day": "2028-04-16",
-      "name": "Ostersonntag"
+      "name": "Easter Sunday"
     },
     {
       "day": "2028-04-17",
-      "name": "Ostermontag"
+      "name": "Easter Monday"
     },
     {
       "day": "2028-05-25",
-      "name": "Auffahrt"
+      "name": "Ascension Day"
     },
     {
       "day": "2028-06-04",
-      "name": "Pfingstsonntag"
+      "name": "Pentecost"
     },
     {
       "day": "2028-06-05",
-      "name": "Pfingstmontag"
+      "name": "Whit Monday"
     },
     {
       "day": "2028-08-01",
@@ -1074,15 +1074,15 @@ export const HOLIDAY_SEED: Record<string, SeedHoliday[]> = {
     },
     {
       "day": "2028-09-17",
-      "name": "Eidg. Dank-, Buss- und Bettag"
+      "name": "Federal Day of Thanksgiving, Repentance and Prayer"
     },
     {
       "day": "2028-12-25",
-      "name": "Weihnachtstag"
+      "name": "Christmas Day"
     },
     {
       "day": "2028-12-26",
-      "name": "Stephanstag"
+      "name": "Boxing Day"
     }
   ],
   "China": [
