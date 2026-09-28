@@ -1,6 +1,6 @@
 # JMO Calendar — recurrence pattern mapping guide
 
-**Reflects the app's pattern set as of 2026-09-23 (rev 5).**
+**Reflects the app's pattern set as of 2026-09-28 (rev 6).**
 If the app gains a new pattern type, this file is updated in the dev chat and re-stamped.
 
 ---
@@ -71,6 +71,10 @@ First pick **Months**: `Every month` · `Quarterly (Mar/Jun/Sep/Dec)` · `Once a
 7. **First weekday on/after a date** — the first [weekday] on or after the Dth, then rolled off weekends and respected holidays. Inputs: weekday, D ∈ [1..31], and a **roll direction**: `holiday → next business day` (forward, default — stat releases move *later*) or `holiday → previous business day` (backward — **Treasury auctions** move *earlier*). **Holiday-aware** (attach a holiday calendar so the roll works).
    - *Semantics:* the true form of many mid-month stat releases (and Treasury auctions) that *look* like "Nth weekday" but actually anchor to a date — they coincide most months and diverge when the month starts on a day that puts the 2nd occurrence of the weekday on/after D. Prefer this over "Nth weekday" when the release tracks a day-of-month.
    - *Examples:* Canada CPI = "first Monday on/after the 14th", forward roll, + Canada (TSX): Feb → Tue 17th (Family Day). US 10-Year auction = "first Wednesday on/after the 6th", **backward** roll, + US Bond Market (SIFMA): Nov 2026 → Tue 10th (rolls earlier off Veterans Day).
+
+8. **Reference week (US employment)** — one release per cycle: the Nth [weekday] after the Sun–Sat week containing the Dth of the **reference month** (a month-offset from the release month, usually −1), plus a **result offset in days**, holiday-rolled. Inputs: refDom (12), month offset (−1), weekday (Fri), nth (3), offset days, roll. **Holiday-aware.**
+   - *Semantics:* the release can land in the release month **or** (for negative offsets) late in the previous calendar month, so some calendar months carry two releases and some none — that's expected. This is the true anchor of the US employment family; it even reproduces NFP's "off-pattern" months (e.g. May 2026 = the 8th) that look discretionary.
+   - *Examples:* **NFP** = refDom 12, offset −1 month, 3rd Friday, +0 days, backward roll. **ADP** = same, **−2 days** (the Wednesday). **JOLTS** = same, **−3 days** (the Tuesday). Attach **US (Federal)**. *Still manual:* NFP's January (benchmark-revision delay, ~a week late) and Labor-Day-week offset compression; when NFP shifts discretionarily, adjust ADP/JOLTS the same month (they don't auto-follow).
 
 ### Frequency: "Weekly"
 Pick one or more weekdays. Fires every week on those days. No monthly logic.
@@ -159,8 +163,7 @@ Misfit *shapes* seen so far. If an event's dates match one of these, label the M
 - **Design options when we build it:**
   - **(a)** add a `result_offset_days` input to `reference_week` (NFP = 0, ADP = −2) plus the Labor-Day clause — self-contained, simple.
   - **(b)** a more general **"offset from another series' occurrence"** primitive (ADP = NFP's date − 2 days). More powerful — many events cluster around anchors (ADP↔NFP; events keyed to FOMC/CPI) — but a bigger change (one series depends on another → dependency + re-projection ordering). Decide (a) vs (b) at build time.
-- **Status:** NOT built. Build when clearly worth it (~3+ instances, or when (b) would serve several anchor-relative events). Use the per-instance interims above until then.
-- **If built:** leave out ad-hoc exception hacks (e.g. an "early-January +7" fudge). Discretionary shifts (benchmark revisions, shutdowns) aren't formula-modelable — handle per-occurrence.
+- **Status: BUILT (2026-09-28)** as rule #8 above (`Reference week (US employment)`, self-contained `result_offset_days`), after JOLTS became the 3rd instance. Set NFP/ADP/JOLTS with rule #8 (offsets 0 / −2 / −3), attach **US (Federal)**. The build option (a) was chosen: ADP/JOLTS don't auto-follow NFP's discretionary shifts (option (b), "offset from another series", was not built) — adjust the three together in NFP's January and other one-off months.
 
 ### Candidate #2 — `first_weekday_on_or_after` (weekday anchored to a day-of-month)
 - **Shape:** the first [weekday] on or after the Dth of the month (D typically ~11–14). **Easy to mistake for `Nth weekday`** — they give the same date in most months and only diverge when the month starts so that the target weekday's 2nd occurrence is already ≥ D (then "on/after D" lands a week earlier than "3rd weekday").
