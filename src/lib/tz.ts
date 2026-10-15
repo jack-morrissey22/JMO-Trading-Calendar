@@ -16,6 +16,7 @@ export const MARKET_TZS: { value: string; label: string }[] = [
   { value: 'Asia/Tokyo', label: 'Japan' },
   { value: 'Asia/Singapore', label: 'Singapore' },
   { value: 'Asia/Seoul', label: 'Korea' },
+  { value: 'Asia/Taipei', label: 'Taiwan' },
   { value: 'Australia/Sydney', label: 'Sydney' },
   { value: 'Pacific/Auckland', label: 'New Zealand' },
 ]
